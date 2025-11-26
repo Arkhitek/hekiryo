@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>木造軸組み工法用壁量算出・柱断面算定プログラム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root { --primary:#2c3e50; --bg:#f5f7fa; --panel:#fff; --ok:#27ae60; --ng:#c0392b; --border:#ccc; --link:#3498db; }
+body{font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:#333;margin:0;padding:20px;}
+.container{max-width:1000px;margin:0 auto;background:var(--panel);padding:24px;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}
+h1{text-align:center;color:var(--primary);margin:0 0 8px 0;font-size:1.4rem;}
+.subtitle{text-align:center;color:#7f8c8d;margin-bottom:18px;font-size:0.9rem;font-weight:bold;}
+
+/* Grid Layout */
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
+@media(max-width:768px){.cols-2{grid-template-columns:1fr;}}
+
+.row{margin-bottom:12px;}
+label{display:block;font-weight:700;font-size:0.85rem;color:#444;margin-bottom:6px;}
+input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box;}
+
+/* Result Cards */
+.res-card{background:#fff;border:2px solid var(--primary);padding:12px;border-radius:6px;text-align:center;}
+.res-val{font-size:1.6rem;font-weight:700;color:var(--primary);}
+.res-sub{font-size:0.85rem;color:#666;margin-top:8px;}
+
+/* Tables */
+.check-table{width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:10px;}
+.check-table th, .check-table td{border:1px solid #ddd;padding:8px;text-align:center;background:#fff;}
+.status-ok{color:var(--ok);font-weight:700;}
+.status-ng{color:var(--ng);font-weight:700;}
+
+/* Log Style */
+.detail-box{background:#2c3e50;color:#ecf0f1;padding:16px;border-radius:8px;margin-top:30px;font-family:'Courier New', monospace;font-size:0.85rem;line-height:1.4;}
+.detail-box h3 {border-bottom:1px solid #95a5a6; padding-bottom:5px; margin-top:0; color:#fff;}
+.detail-box h4{color:#f1c40f;margin:15px 0 5px 0;border-left:4px solid #f1c40f;padding-left:8px;}
+.log-row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);padding:4px 0;}
+.log-key{color:#bdc3c7; flex:1;}
+.log-val{color:#2ecc71;font-weight:700; text-align:right;}
+.log-note{font-size:0.75rem;color:#95a5a6;display:block;text-align:right;margin-left:10px;}
+.log-formula{color:#3498db; font-size:0.8rem; text-align:right; margin-right:10px; flex:1;}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid #ccc;margin-bottom:16px;}
+.tab-btn{padding:8px 14px;cursor:pointer;background:#eee;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;margin-right:6px;color:#666;}
+.tab-btn.active{background:#fff;border-color:#ccc;border-bottom-color:#fff;color:var(--primary);font-weight:700;}
+.tab-content{display:none;} /* Default hidden */
+
+/* Titles inside sections */
+.input-group-title {font-size:0.9rem; font-weight:bold; color:var(--primary); border-bottom:1px solid #eee; margin-bottom:10px; padding-bottom:4px; margin-top:10px;}
+.section-header { display:none; border-bottom:2px solid #333; margin-top:20px; padding-bottom:5px; margin-bottom:15px; font-size:1.2rem; font-weight:bold; color:#000; }
+
+/* Links & Buttons */
+.ref-link-mini { font-size:0.75rem; color:#fff; background:var(--link); padding:2px 6px; border-radius:4px; text-decoration:none; margin-left:auto; }
+.footer-link-box { margin-top:30px; padding:15px; background:#eaf2f8; border:1px solid #bdc3c7; border-radius:6px; text-align:center; }
+.footer-link-box a { color:var(--link); font-weight:bold; text-decoration:none; font-size:0.95rem; }
+
+.pdf-btn { display:block; width:100%; max-width:300px; margin:20px auto 0; padding:12px; background:#e74c3c; color:#fff; text-align:center; border:none; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
+.pdf-btn:hover { background:#c0392b; }
+
+/* =========================================
+   PDF EXPORT MODE STYLES (Strict Layout)
+   ========================================= */
+body.pdf-mode {
+    background: #fff;
+    padding: 0;
+    margin: 0;
+}
+body.pdf-mode .container {
+    width: 750px !important; /* Fix width to prevent overflow on A4 */
+    max-width: 750px !important;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0 auto;
+}
+body.pdf-mode .tabs, 
+body.pdf-mode .pdf-btn,
+body.pdf-mode .footer-link-box,
+body.pdf-mode .tab-btn {
+    display: none !important;
+}
+body.pdf-mode .tab-content {
+    display: block !important;
+}
+body.pdf-mode .section-header {
+    display: block !important;
+}
+/* Force black text for print */
+body.pdf-mode, body.pdf-mode input, body.pdf-mode select {
+    color: #000 !important;
+}
+
+/* --- Page Break Management --- */
+body.pdf-mode .res-card, 
+body.pdf-mode .check-table {
+    page-break-inside: avoid; /* Don't split tables or cards */
+}
+body.pdf-mode #column {
+    page-break-before: always; /* Start Section 2 on new page */
+}
+body.pdf-mode .detail-box {
+    page-break-before: always; /* Start Log on new page */
+    page-break-inside: auto;   /* Allow Log to split across pages */
+    background: #fff;          /* Save ink */
+    color: #000;
+    border: 1px solid #333;
+    padding: 10px;
+}
+body.pdf-mode .detail-box h3, 
+body.pdf-mode .detail-box h4 {
+    color: #000;
+    border-bottom-color: #000;
+    border-left-color: #000;
+}
+body.pdf-mode .log-row { 
+    border-bottom: 1px solid #eee; 
+    page-break-inside: avoid; /* Keep individual lines together */
+}
+body.pdf-mode .log-key { color: #333; }
+body.pdf-mode .log-val { color: #000; }
+body.pdf-mode .log-formula { color: #555; }
+</style>
+</head>
+<body>
+<div class="container" id="main-container">
+  <h1>木造軸組み工法用壁量算出・柱断面算定プログラム</h1>
+  <p class="subtitle">令和7年施行基準準拠</p>
+
+  <div class="tabs" id="tab-controls">
+    <div class="tab-btn active" onclick="switchTab('wall', this)">1. 必要壁量の算出</div>
+    <div class="tab-btn" onclick="switchTab('column', this)">2. 柱の断面算定</div>
+  </div>
+
+  <div id="wall" class="tab-content" style="display:block;">
+    <div class="section-header">1. 必要壁量の算出</div>
+    <div class="cols-2">
+      <div>
+        <div class="input-group-title">基本条件</div>
+        <div class="row">
+          <label>階数</label>
+          <select id="stories" onchange="UI.update(); Calc.exec();">
+            <option value="2">2階建て</option>
+            <option value="1">平屋建て</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>用途 (積載荷重)</label>
+          <select id="usage" onchange="Calc.exec()">
+            <option value="res">住宅 (P=600/1300)</option>
+            <option value="office">事務所 (P=800/1800)</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="row">
+            <label>性能等級</label>
+            <select id="grade" onchange="Calc.exec()">
+              <option value="1">等級1 (基準法)</option>
+              <option value="2">等級2 (1.25倍)</option>
+              <option value="3">等級3 (1.50倍)</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>地域係数 Z</label>
+            <select id="z_val" onchange="Calc.exec()">
+              <option value="1.0">1.0</option>
+              <option value="0.9">0.9</option>
+              <option value="0.8">0.8</option>
+              <option value="0.7">0.7</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group-title" style="margin-top:15px;">建物規模</div>
+        <div class="row" id="grp_h2"><label>2階 階高 (m)</label><input type="number" id="h2" value="2.8" step="0.01" onchange="Calc.exec()"></div>
+        <div class="row"><label>1階 階高 (m)</label><input type="number" id="h1" value="2.8" step="0.01" onchange="Calc.exec()"></div>
+        <div class="row"><label>屋根高さ (最高高さ-軒高) (m)</label><input type="number" id="roof_h" value="1.5" step="0.1" onchange="Calc.exec()"></div>
+        <div class="row" id="grp_area2"><label>2階 床面積 (㎡)</label><input type="number" id="area2" value="50" step="0.01" onchange="Calc.exec()"></div>
+        <div class="row"><label>1階 床面積 (㎡)</label><input type="number" id="area1" value="50" step="0.01" onchange="Calc.exec()"></div>
+      </div>
+
+      <div>
+        <div class="input-group-title">仕様・荷重</div>
+        <div class="row"><label>屋根仕様</label>
+          <select id="mat_roof" onchange="Calc.exec()">
+            <option value="990">瓦屋根 (990 N/㎡)</option>
+            <option value="740">スレート (740 N/㎡)</option>
+            <option value="500">金属板 (500 N/㎡)</option>
+          </select>
+        </div>
+        
+        <div class="row">
+          <label>多雪区域</label>
+          <select id="is_heavy_snow" onchange="UI.toggle('snow'); Calc.exec();">
+            <option value="no">なし (一般区域)</option>
+            <option value="yes">あり (多雪区域)</option>
+          </select>
+        </div>
+        <div id="pnl_snow" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="row"><label>垂直積雪量 (cm)</label><input type="number" id="val_snow_d" placeholder="例:100" onchange="Calc.exec()"></div>
+          <div class="row"><label>単位荷重 N/m²/cm</label><input type="number" id="val_snow_w" value="30" onchange="Calc.exec()"></div>
+        </div>
+
+        <div class="row">
+          <label>天井断熱材</label>
+          <select id="sel_insul_roof" onchange="UI.toggle('roof'); Calc.exec();">
+            <option value="100">初期値 (100 N/㎡)</option>
+            <option value="custom">任意入力</option>
+          </select>
+          <div id="pnl_insul_roof" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="row"><label>密度kg/㎥</label><input type="number" id="val_ir_d" placeholder="24" onchange="Calc.exec()"></div>
+            <div class="row"><label>厚さ mm</label><input type="number" id="val_ir_t" placeholder="400" onchange="Calc.exec()"></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>太陽光パネル</label>
+          <select id="mat_solar" onchange="UI.toggle('solar'); Calc.exec();">
+            <option value="none">なし</option>
+            <option value="200">あり (200 N/㎡)</option>
+            <option value="custom">任意入力 (総重量)</option>
+          </select>
+          <div id="pnl_solar" style="display:none;grid-template-columns:1fr;">
+            <div class="row"><label>総重量 (kg)</label><input type="number" id="val_solar_kg" placeholder="0" onchange="Calc.exec()"></div>
+          </div>
+        </div>
+
+        <div class="row"><label>外壁仕様</label>
+          <select id="mat_wall" onchange="Calc.exec()">
+            <option value="土塗り壁等">土塗り壁 (1000)</option>
+            <option value="モルタル等">モルタル (890)</option>
+            <option value="サイディング">サイディング (600)</option>
+            <option value="金属板張">金属板張 (500)</option>
+            <option value="下見板張">下見板張 (350)</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>外壁断熱材</label>
+          <select id="sel_insul_wall" onchange="UI.toggle('wall'); Calc.exec();">
+            <option value="70">初期値 (70)</option>
+            <option value="custom">任意入力</option>
+          </select>
+          <div id="pnl_insul_wall" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="row"><label>密度 kg/㎥</label><input type="number" id="val_iw_d" placeholder="24" onchange="Calc.exec()"></div>
+            <div class="row"><label>厚さ mm</label><input type="number" id="val_iw_t" placeholder="170" onchange="Calc.exec()"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="row"><label>屋根勾配(寸)</label><input type="number" id="kobai" value="4" onchange="Calc.exec()"></div>
+          <div class="row"><label>軒の出 (m)</label><input type="number" id="noki" value="0.6" step="0.1" onchange="Calc.exec()"></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:16px;">計算結果</h3>
+    <div class="cols-2">
+      <div>
+        <div class="res-card">
+          <div class="res-val" id="disp_lw1">-</div>
+          <div class="res-sub">1階 必要壁量 (cm/㎡)<br>※小数点以下切り上げ</div>
+          <div class="res-sub">支える重量 ΣW1: <span id="disp_sw1">-</span> kN / Ai: 1.00</div>
+        </div>
+      </div>
+      <div>
+        <div class="res-card">
+          <div class="res-val" id="disp_lw2">-</div>
+          <div class="res-sub">2階 必要壁量 (cm/㎡)<br>※小数点以下切り上げ</div>
+          <div class="res-sub">支える重量 ΣW2: <span id="disp_sw2">-</span> kN / Ai: <span id="disp_ai2">-</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="column" class="tab-content" style="display:none;">
+    <div class="section-header">2. 柱の断面算定</div>
+    <div class="cols-2">
+      <div>
+        <div class="input-group-title">柱の検討条件</div>
+        <div class="row">
+          <label>検討階</label>
+          <select id="col_floor" onchange="Calc.exec()">
+            <option value="1">1階の柱</option>
+            <option value="2" id="opt_col_2f">2階の柱</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>負担部位</label>
+          <select id="col_pos" onchange="Calc.exec()">
+            <option value="outer">外周部 (屋根+外壁)</option>
+            <option value="inner">内部 (屋根+内壁)</option>
+          </select>
+        </div>
+        <div class="row">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+             <label style="margin:0;">負担面積 (㎡)</label>
+             <a href="https://www.howtec.or.jp/relays/download/441/1513/1313/5775/?file=/files/libs/5775/202405241338047322.pdf" target="_blank" class="ref-link-mini">参考資料</a>
+          </div>
+          <input type="number" id="col_ae" value="5.0" step="0.1" onchange="Calc.exec()" style="margin-top:6px;">
+        </div>
+        
+        <div class="input-group-title" style="margin-top:15px;">柱の仕様</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="row"><label>短辺 (mm)</label><input type="number" id="col_w_min" value="105" onchange="Calc.exec()"></div>
+          <div class="row"><label>長辺 (mm)</label><input type="number" id="col_w_max" value="105" onchange="Calc.exec()"></div>
+        </div>
+        <div class="row"><label>材種・区分</label><select id="mat_cat" onchange="Mat.updateSpecies()"></select></div>
+        <div class="row"><label>樹種詳細</label><select id="mat_spec" onchange="Mat.updateGrade()"></select></div>
+        <div class="row"><label>等級選択</label><select id="mat_grade" onchange="Calc.exec()"></select></div>
+        <div class="row" style="background:#f9f9f9;padding:10px;border-radius:4px;">
+          <label>選択された基準強度 Fc</label>
+          <strong id="disp_fc" style="color:var(--primary);font-size:1.2rem;">-</strong> N/㎟
+        </div>
+      </div>
+
+      <div>
+        <div class="input-group-title">検定結果</div>
+        <div class="res-card" style="border-color:#3498db;background:#f4faff;">
+          <div class="res-val" id="col_judge">-</div>
+          <div class="res-sub" id="col_msg">-</div>
+        </div>
+
+        <table class="check-table">
+          <tr><th>項目</th><th>計算値</th><th>基準/許容</th></tr>
+          <tr><td>床面積あたり荷重</td><td><span id="chk_wd">-</span> N/㎡</td><td>(平均荷重法)</td></tr>
+          <tr><td>発生軸力 (N)</td><td><span id="chk_n_act">-</span> kN</td><td><span id="chk_n_allow">-</span> kN</td></tr>
+          <tr><td>有効細長比 (λ)</td><td id="chk_lambda">-</td><td>≦ 150</td></tr>
+          <tr><td>長期許容応力度 (fk)</td><td><span id="chk_fk">-</span> N/㎟</td><td>1.1/3 × Fc × Kd</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-box" id="calc_log"></div>
+
+  <div class="footer-link-box">
+    <a href="https://www.howtec.or.jp/publics/index/441/" target="_blank">参考資料：壁量等の基準（令和７年施行）設計支援ツール</a>
+  </div>
+
+  <button class="pdf-btn" onclick="genPDF()" id="btn-export">計算書PDF出力</button>
+</div>
+
+<script>
+/* ===== Tab Switcher ===== */
+window.switchTab = function(id, btnElement) {
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.style.display = 'none'; });
+  const target = document.getElementById(id);
+  if (target) target.style.display = 'block';
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  if (btnElement) btnElement.classList.add('active');
+};
+
+/* ===== PDF Generation ===== */
+function genPDF() {
+  if (typeof html2pdf === 'undefined') {
+    alert("PDF生成ライブラリの読み込みに失敗しました。インターネット接続を確認してください。");
+    return;
+  }
+
+  const container = document.getElementById('main-container');
+  const btn = document.getElementById('btn-export');
+  
+  // 1. 印刷モードクラスを付与 (CSSで全タブ表示・スタイル調整)
+  document.body.classList.add('pdf-mode');
+  
+  // 一時的にボタンの文字を変更
+  const originalText = btn.textContent;
+  btn.textContent = "PDF生成中...";
+
+  // 2. HTML2PDF オプション設定
+  const opt = {
+    margin:       10, // 余白 (mm)
+    filename:     'structure_calculation.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // 高解像度設定
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['css', 'legacy'] } // CSSでの改ページ制御を有効化
+  };
+
+  // 3. 生成実行
+  html2pdf().set(opt).from(container).save().then(function(){
+    // 4. 元に戻す
+    document.body.classList.remove('pdf-mode');
+    btn.textContent = originalText;
+  }).catch(function(err) {
+    console.error(err);
+    alert("PDF生成中にエラーが発生しました。");
+    document.body.classList.remove('pdf-mode');
+    btn.textContent = originalText;
+  });
+}
+
+/* ===== Helpers ===== */
+const val = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; };
+const txt = (id, v) => { document.getElementById(id).textContent = v; };
+const roundup_to_10 = x => Math.ceil(x / 10.0) * 10.0;
+
+/* ===== Material DB ===== */
+const DB_SOURCE = {
+  "JAS機械等級区分": {
+    "あかまつ": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "べいまつ": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "ダフリカからまつ": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "べいつが": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "えぞまつ": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "とどまつ": { "E70":9.6, "E90":16.8, "E110":24.6, "E130":31.8, "E150":39 },
+    "からまつ": { "E50":11.4, "E70":18, "E90":24.6, "E110":31.2, "E130":37.8, "E150":44.4 },
+    "ひのき": { "E50":11.4, "E70":18, "E90":24.6, "E110":31.2, "E130":37.8, "E150":44.4 },
+    "ひば": { "E50":11.4, "E70":18, "E90":24.6, "E110":31.2, "E130":37.8, "E150":44.4 },
+    "すぎ": { "E50":19.2, "E70":23.4, "E90":28.2, "E110":32.4, "E130":37.2, "E150":41.4 }
+  },
+  "JAS目視等級区分": {
+    "あかまつ": { "一級(甲/乙種)":27, "二級":16.8, "三級":11.4 },
+    "べいまつ": { "一級(甲/乙種)":27, "二級":18, "三級":13.8 },
+    "からまつ": { "一級(甲/乙種)":23.4, "二級":20.4, "三級":18.6 },
+    "ダフリカからまつ": { "一級(甲/乙種)":28.8, "二級":25.2, "三級":22.2 },
+    "ひば": { "一級(甲/乙種)":28.2, "二級":27.6, "三級":23.4 },
+    "ひのき": { "一級(甲/乙種)":30.6, "二級":27, "三級":23.4 },
+    "べいつが": { "一級(甲/乙種)":21, "二級":21, "三級":17.4 },
+    "えぞまつ・とどまつ": { "一級(甲/乙種)":27, "二級":22.8, "三級":13.8 },
+    "すぎ": { "一級(甲/乙種)":21.6, "二級":20.4, "三級":18 }
+  },
+  "無等級材": {
+    "針葉樹": {
+      "あかまつ":22.2, "くろまつ":22.2, "べいまつ":22.2, "からまつ":20.7, 
+      "ひば":20.7, "ひのき":20.7, "べいひ":20.7, "べいひば":20.7,
+      "つが":19.2, "べいつが":19.2, "もみ":17.7, "えぞまつ":17.7, 
+      "とどまつ":17.7, "べにまつ":17.7, "すぎ":17.7, "べいすぎ":17.7, "スプルース":17.7
+    },
+    "広葉樹": { "かし":27, "くり":21, "なら":21, "ぶな":21, "けやき":21 }
+  },
+  "JAS集成材(同一等級)": {
+    "4層以上": {
+       "E190-F615":50.3, "E170-F540":44.6, "E150-F465":39.2, "E135-F405":33.4,
+       "E120-F375":30.1, "E105-F345":28.1, "E95-F315":26.0, "E85-F300":24.3,
+       "E75-F270":22.3, "E65-F255":20.6, "E55-F225":18.6
+    },
+    "3層": {
+       "E190-F555":45.8, "E170-F495":40.5, "E150-F435":35.6, "E135-F375":30.4,
+       "E120-F330":27.4, "E105-F300":25.5, "E95-F285":23.6, "E85-F270":22.1,
+       "E75-F255":20.3, "E65-F240":18.8, "E55-F225":16.9
+    },
+    "2層": {
+       "E190-F510":45.8, "E170-F450":40.5, "E150-F390":35.6, "E135-F345":30.4,
+       "E120-F300":27.4, "E105-F285":25.5, "E95-F270":23.6, "E85-F255":22.1,
+       "E75-F240":20.3, "E65-F225":18.8, "E55-F200":16.9
+    }
+  },
+  "JAS_LVL(A種)": {
+    "構造用単板積層材": {
+      "180E 特級":46.8, "180E 一級":45, "180E 二級":42,
+      "160E 特級":41.4, "160E 一級":40.2, "160E 二級":37.2,
+      "140E 特級":36, "140E 一級":34.8, "140E 二級":32.4,
+      "120E 特級":31.2, "120E 一級":30, "120E 二級":27.6,
+      "100E 特級":25.8, "100E 一級":25.2, "100E 二級":23.4,
+      "80E 特級":21, "80E 一級":19.8, "80E 二級":18.6,
+      "60E 特級":15.6, "60E 一級":15, "60E 二級":13.8
+    }
+  }
+};
+
+const WALL_TABLE = [
+  {name: '土塗り壁等', base: 1000},
+  {name: 'モルタル等', base: 890},
+  {name: 'サイディング', base: 600},
+  {name: '金属板張', base: 500},
+  {name: '下見板張', base: 350}
+];
+
+/* ===== Logic Helpers ===== */
+const Mat = {
+  init(){
+    const catSel = document.getElementById('mat_cat');
+    catSel.innerHTML = '';
+    Object.keys(DB_SOURCE).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      catSel.appendChild(opt);
+    });
+    catSel.value = "無等級材";
+    this.updateSpecies();
+  },
+  updateSpecies(){
+    const cat = document.getElementById('mat_cat').value;
+    const specSel = document.getElementById('mat_spec');
+    specSel.innerHTML = '';
+    const specs = DB_SOURCE[cat];
+    if(!specs) return;
+    Object.keys(specs).forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      specSel.appendChild(opt);
+    });
+    if(cat==="無等級材") specSel.value = "針葉樹";
+    this.updateGrade();
+  },
+  updateGrade(){
+    const cat = document.getElementById('mat_cat').value;
+    const spec = document.getElementById('mat_spec').value;
+    const gradeSel = document.getElementById('mat_grade');
+    gradeSel.innerHTML = '';
+    const grades = DB_SOURCE[cat][spec];
+    if (typeof grades === 'object') {
+       Object.keys(grades).forEach(g => {
+         const fc = grades[g];
+         const opt = document.createElement('option');
+         opt.value = fc; opt.textContent = `${g} (Fc=${fc})`;
+         gradeSel.appendChild(opt);
+       });
+    }
+    if(cat === "無等級材"){
+       gradeSel.innerHTML = '';
+       const subObj = DB_SOURCE[cat][spec];
+       Object.keys(subObj).forEach(treeName => {
+         const fc = subObj[treeName];
+         const opt = document.createElement('option');
+         opt.value = fc; opt.textContent = `${treeName} (Fc=${fc})`;
+         if(treeName==='すぎ') opt.selected = true; 
+         gradeSel.appendChild(opt);
+       });
+    }
+    Calc.exec();
+  }
+};
+
+/* ===== Enhanced Logger ===== */
+const Log = {
+  lines:[], 
+  clear(){this.lines=[]}, 
+  header(h){this.lines.push({t:'h',h})}, 
+  add(k,v,f,n){this.lines.push({t:'r',k,v,f,n})}, 
+  render(){ 
+    const box=document.getElementById('calc_log'); 
+    box.innerHTML = '<h3>計算詳細ログ</h3>' + this.lines.map(l=>{ 
+      if(l.t==='h') return `<h4>${l.h}</h4>`; 
+      return `<div class="log-row">
+        <span class="log-key">${l.k}</span>
+        ${l.f ? `<span class="log-formula">${l.f}</span>` : ''}
+        <span class="log-val">${l.v}</span>
+        ${l.n?` <span class="log-note">${l.n}</span>`:''}
+      </div>`; 
+    }).join(''); 
+  } 
+};
+
+/* ===== Calculation Engine ===== */
+const Calc = {
+  exec(){
+    Log.clear();
+    const stories = parseInt(document.getElementById('stories').value);
+    const h1 = val('h1'), h2 = (stories===2) ? val('h2') : 0;
+    const area1 = val('area1'), area2 = (stories===2) ? val('area2') : 0;
+    const noki = val('noki'), kobai = val('kobai');
+    const grade = parseInt(document.getElementById('grade').value);
+
+    // 1. Projection Factor
+    const base_model_area = 99.0;
+    const dim_x = 6.0, dim_y = 16.5;
+    const proj_area_model = (dim_x + 2 * noki) * (dim_y + 2 * noki);
+    const proj_ratio_model = proj_area_model / base_model_area;
+    const slope_factor = Math.sqrt(1 + Math.pow(kobai/10,2));
+    const roof_multiplier = proj_ratio_model * slope_factor;
+
+    Log.header("1. 屋根・壁の重量算定係数");
+    Log.add("屋根面積倍率", roof_multiplier.toFixed(4), `${proj_ratio_model.toFixed(4)} × ${slope_factor.toFixed(4)}`, "投影比×勾配");
+
+    // 2. Unit Loads (Roof)
+    const w_roof_mat = val('mat_roof');
+    let w_roof_insul = 100;
+    if(document.getElementById('sel_insul_roof').value === 'custom') {
+      w_roof_insul = val('val_ir_d') * (val('val_ir_t')/1000) * 9.8;
+    }
+    const solar_mode = document.getElementById('mat_solar').value;
+    let w_solar_surf = 0;
+    if(solar_mode === '200') w_solar_surf = 200;
+    else if(solar_mode === 'custom') {
+       const roof_surf_area = ((stories===2?area2:area1) * roof_multiplier); 
+       if(roof_surf_area>0) w_solar_surf = (val('val_solar_kg') * 9.8) / roof_surf_area;
+    }
+    const Gr = (w_roof_mat + w_solar_surf) * roof_multiplier + w_roof_insul;
+
+    Log.header("2. 屋根荷重の算定 (単位 N/㎡)");
+    Log.add("屋根材+太陽光", (w_roof_mat+w_solar_surf).toFixed(1), `${w_roof_mat}+${w_solar_surf.toFixed(1)}`, "");
+    Log.add("屋根荷重(Gr)", Gr.toFixed(1), `(${w_roof_mat}+${w_solar_surf.toFixed(1)})×倍率 + ${w_roof_insul}`, "");
+
+    // Snow
+    let Ms = 0;
+    const isHeavySnow = (document.getElementById('is_heavy_snow').value === 'yes');
+    if(isHeavySnow){
+      const d = val('val_snow_d'); 
+      const unit = val('val_snow_w'); 
+      Ms = (d * unit * 0.35) * proj_ratio_model;
+      Log.add("積雪荷重(Ms)", Ms.toFixed(1), `(${d}cm×${unit}×0.35) × ${proj_ratio_model.toFixed(4)}`, "地震用(0.35倍)");
+    }
+
+    // 3. Wall Loads
+    const w_wall_mat_base = WALL_TABLE.find(r=>r.name===document.getElementById('mat_wall').value).base;
+    let w_wall_ins_base = 70;
+    if(document.getElementById('sel_insul_wall').value === 'custom'){
+       w_wall_ins_base = val('val_iw_d') * (val('val_iw_t')/1000) * 9.8;
+    } else if(document.getElementById('sel_insul_wall').value === '100'){
+       w_wall_ins_base = 100;
+    }
+    const w_window_base = 400; 
+
+    const calcOuter = (h) => {
+      const perimeter_h = (6*h*2) + (16.5*h*2);
+      const floor_A = 99.0;
+      const factor_net = (perimeter_h * (1 - 0.09)) / floor_A;
+      const factor_win = (perimeter_h * 0.09) / floor_A;
+      const t_mat = roundup_to_10(w_wall_mat_base * factor_net);
+      const t_ins = roundup_to_10(w_wall_ins_base * factor_net);
+      const t_win = roundup_to_10(w_window_base * factor_win);
+      return { total: t_mat + t_ins + t_win, t_mat, t_ins, t_win };
+    };
+    const calcInner = (h) => (200 * h / 2.8);
+
+    Log.header("3. 壁荷重の算定 (階高毎計算)");
+    let w_wall_2 = 0, w_out2 = 0, w_in2 = 0;
+    if(stories===2){
+      const out2 = calcOuter(h2);
+      w_out2 = out2.total;
+      w_in2 = calcInner(h2);
+      w_wall_2 = w_out2 + w_in2;
+      Log.add("2階外壁標準", w_out2, `${out2.t_mat}+${out2.t_ins}+${out2.t_win}`, "N/㎡");
+      Log.add("2階内壁標準", w_in2.toFixed(1), `200 × ${h2} / 2.8`, "N/㎡");
+      Log.add("2階壁荷重", w_wall_2.toFixed(1), `${w_out2} + ${w_in2.toFixed(1)}`, "N/㎡");
+    }
+
+    const out1 = calcOuter(h1);
+    const w_out1 = out1.total;
+    const w_in1 = calcInner(h1);
+    const w_wall_1 = w_out1 + w_in1;
+    Log.add("1階外壁標準", w_out1, `${out1.t_mat}+${out1.t_ins}+${out1.t_win}`, "N/㎡");
+    Log.add("1階内壁標準", w_in1.toFixed(1), `200 × ${h1} / 2.8`, "N/㎡");
+    Log.add("1階壁荷重", w_wall_1.toFixed(1), `${w_out1} + ${w_in1.toFixed(1)}`, "N/㎡");
+
+    // 4. Seismic Weight
+    const usage = document.getElementById('usage').value;
+    const w_floor_seismic = (usage==='res') ? (610+600) : (610+800);
+    
+    let W2=0, W1=0, Ai2=1.0;
+    const roof_load = Gr + Ms;
+    
+    Log.header("4. 地震用重量(ΣW)と必要壁量(Lw)");
+    if(stories===2){
+      W2 = (roof_load * area2) + (0.5 * w_wall_2 * area2);
+      W1 = (w_floor_seismic * area2) + (0.5 * w_wall_2 * area2) + (0.5 * w_wall_1 * area1) + (roof_load * Math.max(0, area1-area2));
+      const W2_kN = W2/1000;
+      const W1_kN = W1/1000;
+      Log.add("2階重量 ΣW2", W2_kN.toFixed(2)+" kN", `(屋根+0.5×壁2)×A2`, "");
+      Log.add("1階重量 ΣW1", W1_kN.toFixed(2)+" kN", `床+0.5(壁2+壁1)+下屋`, "");
+
+      // Ai
+      const H_total = 0.5 + val('roof_h')/2 + h2 + h1 + 0.5;
+      const T = 0.03 * H_total;
+      const alpha = W2 / (W1+W2); 
+      Ai2 = 1 + ((1/Math.sqrt(alpha)) - alpha) * (2*T)/(1+3*T);
+      const C0 = 0.2;
+      const Z = (grade>1) ? parseFloat(document.getElementById('z_val').value) : 1.0;
+      const gf = (grade===2)?1.25 : (grade===3)?1.5 : 1.0;
+      
+      const force2 = W2_kN * Z * Ai2 * C0 * gf;
+      const req_lw2 = ((force2 / 1.96) * 100) / area2;
+      const force1 = (W1_kN + W2_kN) * Z * 1.0 * C0 * gf;
+      const req_lw1 = ((force1 / 1.96) * 100) / area1;
+
+      // FIX: Round UP req_lw
+      txt('disp_lw2', Math.ceil(req_lw2));
+      txt('disp_sw2', W2_kN.toFixed(1));
+      txt('disp_ai2', Ai2.toFixed(2));
+      txt('disp_lw1', Math.ceil(req_lw1));
+      txt('disp_sw1', (W1_kN+W2_kN).toFixed(1));
+      
+      this.calcColumnData(Gr, w_out2, w_in2, w_out1, w_in1, Ms);
+    } else {
+      W1 = (roof_load * area1) + (0.5 * w_wall_1 * area1);
+      const W1_kN = W1/1000;
+      const Z = (grade>1) ? parseFloat(document.getElementById('z_val').value) : 1.0;
+      const gf = (grade===2)?1.25 : (grade===3)?1.5 : 1.0;
+      const force1 = W1_kN * Z * 1.0 * 0.2 * gf;
+      const req_lw1 = ((force1 / 1.96) * 100) / area1;
+      Log.add("1階重量 ΣW1", W1_kN.toFixed(2)+" kN", `(屋根+0.5×壁1)×A1`, "");
+      
+      // FIX: Round UP req_lw
+      txt('disp_lw1', Math.ceil(req_lw1));
+      txt('disp_sw1', W1_kN.toFixed(1));
+      txt('disp_lw2', '-');
+      txt('disp_sw2', '-');
+      this.calcColumnData(Gr, w_out2, w_in2, w_out1, w_in1, Ms);
+    }
+  },
+
+  calcColumnData(Gr, w_out2, w_in2, w_out1, w_in1, Ms){
+    const stories = parseInt(document.getElementById('stories').value);
+    const floor = parseInt(document.getElementById('col_floor').value);
+    const pos = document.getElementById('col_pos').value;
+    const Ae = val('col_ae');
+    const usage = document.getElementById('usage').value;
+
+    const w_w2 = (pos==='outer') ? (w_out2 + w_in2) : w_in2;
+    const w_w1 = (pos==='outer') ? (w_out1 + w_in1) : w_in1;
+    
+    // Column Floor Load (Live+Dead) - differs from Seismic
+    const w_floor_col = (usage==='res') ? (610+1300) : (610+1800);
+
+    Log.header("5. 柱の小径算定 (長期荷重)");
+    let Wd = 0;
+    let formula_str = "";
+    
+    if(stories===2){
+       if(floor===2){
+         // 2F Column
+         Wd = Gr + Ms + 0.5 * w_w2;
+         formula_str = (pos==='outer') ? "Gr+Ms + 0.5×(外壁+内壁)" : "Gr+Ms + 0.5×内壁";
+         Log.add("負担荷重 Wd", Wd.toFixed(1)+" N/㎡", formula_str, "屋根+積雪+2階壁半");
+         if(pos==='outer') Log.add("※壁荷重詳細", (w_w2).toFixed(1), `${w_out2.toFixed(1)}(外)+${w_in2.toFixed(1)}(内)`, "外周柱は内壁分も加算");
+       } else {
+         // 1F Column
+         Wd = Gr + Ms + w_w2 + w_floor_col + 0.5 * w_w1;
+         formula_str = (pos==='outer') ? "Gr+Ms + (外2+内2) + 床 + 0.5×(外1+内1)" : "Gr+Ms + 内2 + 床 + 0.5×内1";
+         Log.add("床荷重(柱用)", w_floor_col, "DL(610) + LL(1300/1800)", "長期荷重用");
+         Log.add("負担荷重 Wd", Wd.toFixed(1)+" N/㎡", formula_str, "屋根+壁2+床+壁1半");
+       }
+    } else {
+       // 1F Column (1-Story)
+       Wd = Gr + Ms + 0.5 * w_w1;
+       formula_str = (pos==='outer') ? "Gr+Ms + 0.5×(外壁+内壁)" : "Gr+Ms + 0.5×内壁";
+       Log.add("負担荷重 Wd", Wd.toFixed(1)+" N/㎡", formula_str, "屋根+積雪+1階壁半");
+    }
+
+    txt('chk_wd', Wd.toFixed(0));
+    const N_act = Wd * Ae;
+    txt('chk_n_act', (N_act/1000).toFixed(2));
+    Log.add("発生軸力 N", (N_act/1000).toFixed(2)+" kN", `${Wd.toFixed(0)}N/㎡ × ${Ae}㎡`, "負担面積");
+    
+    // Strength Check
+    const h_curr = (floor===2 && stories===2) ? val('h2') : val('h1');
+    
+    // FIX: 1F lk calculation logic (minus 120 for 1F, minus 105 for 2F)
+    const sub_val = (floor === 1) ? 120 : 105;
+    const lk = Math.max(0, h_curr * 1000 - sub_val);
+    
+    const w_min = val('col_w_min');
+    const w_max = val('col_w_max');
+    const short = Math.min(w_min, w_max);
+    
+    const i = short / Math.sqrt(12);
+    const lambda = lk / i;
+    txt('chk_lambda', lambda.toFixed(1));
+    Log.add("有効細長比 λ", lambda.toFixed(1), `lk(${lk}) / i(${i.toFixed(1)})`, `lk=階高-${sub_val}`);
+    
+    const Fc = parseFloat(document.getElementById('mat_grade').value) || 0;
+    txt('disp_fc', Fc);
+    
+    let Kd = 1.0;
+    let kd_formula = "";
+    if(lambda <= 30) { Kd = 1.0; kd_formula="λ≦30 → 1.0"; }
+    else if(lambda <= 100) { Kd = 1.3 - 0.01 * lambda; kd_formula="1.3 - 0.01λ"; }
+    else { Kd = 3000 / (lambda * lambda); kd_formula="3000 / λ²"; }
+    
+    Log.add("座屈係数 Kd", Kd.toFixed(3), kd_formula, (lambda>100)?"オイラー座屈":"直線低減");
+    
+    // FIX: fk Formula (1.1 / 3 * Fc * Kd)
+    const fk = (1.1 * Fc / 3) * Kd;
+    
+    txt('chk_fk', fk.toFixed(2));
+    Log.add("長期許容応力度 fk", fk.toFixed(2)+" N/㎟", `1.1×${Fc}/3 × ${Kd.toFixed(3)}`, "1.1/3×Fc×Kd");
+    
+    const N_allow = fk * w_min * w_max;
+    txt('chk_n_allow', (N_allow/1000).toFixed(2));
+    Log.add("許容耐力 Na", (N_allow/1000).toFixed(2)+" kN", `${fk.toFixed(2)} × ${w_min}×${w_max}`, "fk × 断面積");
+    
+    const elJ = document.getElementById('col_judge');
+    const elM = document.getElementById('col_msg');
+    
+    if(lambda > 150){
+      elJ.textContent = "NG"; elJ.className = "res-val status-ng";
+      elM.textContent = "有効細長比 150超";
+    } else if(N_act <= N_allow){
+      elJ.textContent = "OK"; elJ.className = "res-val status-ok";
+      elM.textContent = `検定比 ${((N_act/N_allow)*100).toFixed(0)}%`;
+    } else {
+      elJ.textContent = "NG"; elJ.className = "res-val status-ng";
+      elM.textContent = "許容耐力不足";
+    }
+    Log.render();
+  }
+};
+
+/* ===== Init ===== */
+Mat.init();
+const UI = { update: () => { const stories=parseInt(document.getElementById('stories').value); const is2F = (stories===2); document.getElementById('grp_h2').style.display=is2F?'block':'none'; document.getElementById('grp_area2').style.display=is2F?'block':'none'; document.getElementById('opt_col_2f').disabled = !is2F; if(!is2F && document.getElementById('col_floor').value==='2') document.getElementById('col_floor').value='1'; }, toggle: (key) => { let sel; if(key==='solar') sel=document.getElementById('mat_solar').value; else if(key==='snow') sel=document.getElementById('is_heavy_snow').value; else sel=document.getElementById('sel_insul_'+key).value; const pnl = (key==='snow')?document.getElementById('pnl_snow'):(key==='solar')?document.getElementById('pnl_solar'):(key==='roof')?document.getElementById('pnl_insul_roof'):document.getElementById('pnl_insul_wall'); const show = (key==='snow') ? (sel==='yes') : (sel==='custom'); if(pnl) pnl.style.display = show ? 'grid' : 'none'; } };
+UI.update();
+Calc.exec();
+</script>
+</body>
+</html>
