@@ -7,7 +7,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root { --primary:#2c3e50; --bg:#f5f7fa; --panel:#fff; --ok:#27ae60; --ng:#c0392b; --border:#ccc; --link:#3498db; }
+
+/* Base Reset & Box Sizing */
+* { box-sizing: border-box; }
+
 body{font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:#333;margin:0;padding:20px;}
+
 .container{max-width:1000px;margin:0 auto;background:var(--panel);padding:24px;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}
 h1{text-align:center;color:var(--primary);margin:0 0 8px 0;font-size:1.4rem;}
 .subtitle{text-align:center;color:#7f8c8d;margin-bottom:18px;font-size:0.9rem;font-weight:bold;}
@@ -18,7 +23,7 @@ h1{text-align:center;color:var(--primary);margin:0 0 8px 0;font-size:1.4rem;}
 
 .row{margin-bottom:12px;}
 label{display:block;font-weight:700;font-size:0.85rem;color:#444;margin-bottom:6px;}
-input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box;}
+input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;}
 
 /* Result Cards */
 .res-card{background:#fff;border:2px solid var(--primary);padding:12px;border-radius:6px;text-align:center;}
@@ -59,68 +64,89 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 .pdf-btn { display:block; width:100%; max-width:300px; margin:20px auto 0; padding:12px; background:#e74c3c; color:#fff; text-align:center; border:none; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
 .pdf-btn:hover { background:#c0392b; }
 
+/* Force Break Elements */
+.pdf-break { display: none; }
+
 /* =========================================
-   PDF EXPORT MODE STYLES (Strict Layout)
+   PDF EXPORT MODE STYLES
    ========================================= */
 body.pdf-mode {
-    background: #fff;
-    padding: 0;
-    margin: 0;
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
 }
+
 body.pdf-mode .container {
-    width: 750px !important; /* Fix width to prevent overflow on A4 */
-    max-width: 750px !important;
-    box-shadow: none;
-    border: none;
-    padding: 0;
-    margin: 0 auto;
+    width: 700px !important;
+    max-width: 700px !important;
+    min-width: 700px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
 }
+
+body.pdf-mode .cols-2 { gap: 15px !important; }
+
+/* Hide interactive elements */
 body.pdf-mode .tabs, 
 body.pdf-mode .pdf-btn,
 body.pdf-mode .footer-link-box,
 body.pdf-mode .tab-btn {
     display: none !important;
 }
-body.pdf-mode .tab-content {
-    display: block !important;
-}
-body.pdf-mode .section-header {
-    display: block !important;
-}
-/* Force black text for print */
-body.pdf-mode, body.pdf-mode input, body.pdf-mode select {
+
+/* Show all content */
+body.pdf-mode .tab-content { display: block !important; }
+body.pdf-mode .section-header { display: block !important; margin-top: 0 !important; }
+
+/* Colors */
+body.pdf-mode, body.pdf-mode input, body.pdf-mode select, body.pdf-mode h1, body.pdf-mode label {
     color: #000 !important;
+    background: transparent !important;
 }
 
-/* --- Page Break Management --- */
+/* Page Break Rules */
+/* This element triggers the page break safely */
+body.pdf-mode .pdf-break {
+    display: block;
+    height: 1px;
+    margin: 0;
+    border: none;
+    page-break-before: always !important;
+    break-before: page !important;
+}
+
+/* Avoid breaking inside cards/tables */
 body.pdf-mode .res-card, 
-body.pdf-mode .check-table {
-    page-break-inside: avoid; /* Don't split tables or cards */
+body.pdf-mode .check-table,
+body.pdf-mode .row {
+    page-break-inside: avoid;
 }
-body.pdf-mode #column {
-    page-break-before: always; /* Start Section 2 on new page */
-}
+
+/* Log Box Style for Print */
 body.pdf-mode .detail-box {
-    page-break-before: always; /* Start Log on new page */
-    page-break-inside: auto;   /* Allow Log to split across pages */
-    background: #fff;          /* Save ink */
-    color: #000;
-    border: 1px solid #333;
-    padding: 10px;
+    /* DO NOT use page-break-before here, use the spacer above instead */
+    page-break-inside: auto;
+    background: #fff !important;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+    padding: 10px !important;
+    margin-top: 10px !important;
 }
+
 body.pdf-mode .detail-box h3, 
 body.pdf-mode .detail-box h4 {
-    color: #000;
-    border-bottom-color: #000;
-    border-left-color: #000;
+    color: #000 !important;
+    border-color: #000 !important;
 }
-body.pdf-mode .log-row { 
-    border-bottom: 1px solid #eee; 
-    page-break-inside: avoid; /* Keep individual lines together */
-}
-body.pdf-mode .log-key { color: #333; }
-body.pdf-mode .log-val { color: #000; }
-body.pdf-mode .log-formula { color: #555; }
+
+body.pdf-mode .log-row { border-bottom: 1px solid #ccc !important; }
+body.pdf-mode .log-key { color: #000 !important; }
+body.pdf-mode .log-val { color: #000 !important; }
+body.pdf-mode .log-formula { color: #444 !important; }
 </style>
 </head>
 <body>
@@ -274,6 +300,8 @@ body.pdf-mode .log-formula { color: #555; }
     </div>
   </div>
 
+  <div class="pdf-break"></div>
+
   <div id="column" class="tab-content" style="display:none;">
     <div class="section-header">2. 柱の断面算定</div>
     <div class="cols-2">
@@ -333,6 +361,8 @@ body.pdf-mode .log-formula { color: #555; }
     </div>
   </div>
 
+  <div class="pdf-break"></div>
+
   <div class="detail-box" id="calc_log"></div>
 
   <div class="footer-link-box">
@@ -362,7 +392,7 @@ function genPDF() {
   const container = document.getElementById('main-container');
   const btn = document.getElementById('btn-export');
   
-  // 1. 印刷モードクラスを付与 (CSSで全タブ表示・スタイル調整)
+  // 1. 印刷モードクラスを付与
   document.body.classList.add('pdf-mode');
   
   // 一時的にボタンの文字を変更
@@ -370,13 +400,14 @@ function genPDF() {
   btn.textContent = "PDF生成中...";
 
   // 2. HTML2PDF オプション設定
+  // ページ区切りはCSSの .pdf-break に任せる（重複指定を避ける）
   const opt = {
-    margin:       10, // 余白 (mm)
+    margin:       10, // mm
     filename:     'structure_calculation.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // 高解像度設定
+    html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'] } // CSSでの改ページ制御を有効化
+    pagebreak:    { mode: ['css', 'legacy'] } 
   };
 
   // 3. 生成実行
