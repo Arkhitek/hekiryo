@@ -6,6 +6,33 @@
 <title>木造軸組み工法用壁量算出・柱断面算定プログラム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
+/* ロゴ配置用CSS */
+.arkhitek-logo-top {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  width: 120px;
+  height: auto;
+  z-index: 100;
+}
+.arkhitek-logo-bottom {
+  display: block;
+  margin: 40px auto 0 auto;
+  width: 120px;
+  height: auto;
+}
+@media print {
+  .arkhitek-logo-top {
+    position: fixed;
+    top: 10mm;
+    right: 10mm;
+    width: 100px;
+  }
+  .arkhitek-logo-bottom {
+    margin-top: 20mm;
+    width: 100px;
+  }
+}
 :root { --primary:#2c3e50; --bg:#f5f7fa; --panel:#fff; --ok:#27ae60; --ng:#c0392b; --border:#ccc; --link:#3498db; }
 
 /* Base Reset & Box Sizing */
@@ -150,6 +177,9 @@ body.pdf-mode .log-formula { color: #444 !important; }
 </style>
 </head>
 <body>
+<body style="position:relative;">
+<!-- 右上ロゴ配置 -->
+<img src="arkhitek_logo.png" alt="ARKHITEK Logo" class="arkhitek-logo-top" />
 <div class="container" id="main-container">
   <h1>木造軸組み工法用壁量算出・柱断面算定プログラム</h1>
   <p class="subtitle">令和7年施行基準準拠</p>
@@ -827,5 +857,8 @@ const UI = { update: () => { const stories=parseInt(document.getElementById('sto
 UI.update();
 Calc.exec();
 </script>
+</body>
+<!-- 最下部ロゴ配置 -->
+<img src="arkhitek_logo.png" alt="ARKHITEK Logo" class="arkhitek-logo-bottom" />
 </body>
 </html>
