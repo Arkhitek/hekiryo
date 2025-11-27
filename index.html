@@ -314,22 +314,24 @@ body.pdf-mode .log-formula { color: #444 !important; }
     </div>
 
     <h3 style="margin-top:16px;">計算結果</h3>
-    <div class="cols-2">
-      <div>
-        <div class="res-card">
-          <div class="res-val" id="disp_lw1">-</div>
-          <div class="res-sub">1階 必要壁量 (cm/㎡)<br>※小数点以下切り上げ</div>
-          <div class="res-sub">支える重量 ΣW1: <span id="disp_sw1">-</span> kN / Ai: 1.00</div>
+      <div class="cols-2">
+        <div>
+          <div class="res-card" style="padding-top:18px;">
+            <div style="font-size:1.1rem;font-weight:bold;color:#e74c3c;margin-bottom:2px;">1階 必要壁量 (cm/㎡)</div>
+            <div class="res-val" id="disp_lw1" style="font-size:2.2rem;color:#e74c3c;">-</div>
+            <div class="res-sub" style="margin-top:2px;">※小数点以下切り上げ</div>
+            <div class="res-sub">支える重量 ΣW1: <span id="disp_sw1">-</span> kN / Ai: 1.00</div>
+          </div>
+        </div>
+        <div>
+          <div class="res-card" style="padding-top:18px;">
+            <div style="font-size:1.1rem;font-weight:bold;color:#3498db;margin-bottom:2px;">2階 必要壁量 (cm/㎡)</div>
+            <div class="res-val" id="disp_lw2" style="font-size:2.2rem;color:#3498db;">-</div>
+            <div class="res-sub" style="margin-top:2px;">※小数点以下切り上げ</div>
+            <div class="res-sub">支える重量 ΣW2: <span id="disp_sw2">-</span> kN / Ai: <span id="disp_ai2">-</span></div>
+          </div>
         </div>
       </div>
-      <div>
-        <div class="res-card">
-          <div class="res-val" id="disp_lw2">-</div>
-          <div class="res-sub">2階 必要壁量 (cm/㎡)<br>※小数点以下切り上げ</div>
-          <div class="res-sub">支える重量 ΣW2: <span id="disp_sw2">-</span> kN / Ai: <span id="disp_ai2">-</span></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="pdf-break"></div>
