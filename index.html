@@ -109,9 +109,9 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 }
 .modal-close:hover { color: #000; }
 
-/* Category Buttons Grid */
+/* Category Buttons Grid (Modified for 4 items) */
 .category-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;
 }
 @media(max-width:600px){ .category-grid { grid-template-columns: 1fr; } }
 
@@ -596,6 +596,10 @@ body.pdf-mode .log-formula { color: #444 !important; }
             <button class="cat-btn" onclick="WallCheck.showCategory('uke')">
               <strong>受材仕様</strong>
               <small>真壁・真壁床勝ち（受材を使用）</small>
+            </button>
+            <button class="cat-btn" onclick="WallCheck.showCategory('sujikai')">
+              <strong>筋交い等</strong>
+              <small>木材筋交い・鉄筋筋交い等</small>
             </button>
           </div>
         </div>
@@ -1180,6 +1184,21 @@ const SPEC_DATA_UKE = [
   {name:"ラスシート メタルラス0.6mm以上", nail:"N38 又は NZ38", p1:150, p2:150, ratio:1.0, note:"受材30x40 M75,N275d300以下"}
 ];
 
+const SPEC_DATA_SUJIKAI = [
+  {name: "土塗壁・木ずり等 (片面)", nail: "-", p1: "-", p2: "-", ratio: 0.5},
+  {name: "木ずり等 (両面)", nail: "-", p1: "-", p2: "-", ratio: 1.0},
+  {name: "木材筋かい (15x90)", nail: "-", p1: "-", p2: "-", ratio: 1.0},
+  {name: "鉄筋筋かい (φ9)", nail: "-", p1: "-", p2: "-", ratio: 1.0},
+  {name: "木材筋かい (30x90)", nail: "-", p1: "-", p2: "-", ratio: 1.5},
+  {name: "木材筋かい (45x90)", nail: "-", p1: "-", p2: "-", ratio: 2.0},
+  {name: "木材筋かい (90角)", nail: "-", p1: "-", p2: "-", ratio: 3.0},
+  {name: "木材筋かい (15x90)×2 (たすき掛け)", nail: "-", p1: "-", p2: "-", ratio: 2.0},
+  {name: "鉄筋筋かい (φ9)×2 (たすき掛け)", nail: "-", p1: "-", p2: "-", ratio: 2.0},
+  {name: "木材筋かい (30x90)×2 (たすき掛け)", nail: "-", p1: "-", p2: "-", ratio: 3.0},
+  {name: "木材筋かい (45x90)×2 (たすき掛け)", nail: "-", p1: "-", p2: "-", ratio: 4.0},
+  {name: "木材筋かい (90角)×2 (たすき掛け)", nail: "-", p1: "-", p2: "-", ratio: 5.0}
+];
+
 const WallCheck = {
   initDone: false,
   currentTargetRow: null,
@@ -1359,6 +1378,10 @@ const WallCheck = {
       title = "【受材仕様（真壁・真壁床勝ち）】一覧";
       imgSrc = "shinkabe.png";
       data = SPEC_DATA_UKE;
+    } else if (type === 'sujikai') {
+      title = "【筋交い等】一覧";
+      imgSrc = "sujikai.png"; // ユーザーが用意する画像ファイル名
+      data = SPEC_DATA_SUJIKAI;
     }
 
     document.getElementById('modal-cat-title').textContent = title;
