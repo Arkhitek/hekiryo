@@ -90,6 +90,58 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 
 .pdf-btn { display:block; width:100%; max-width:300px; margin:20px auto 0; padding:12px; background:#e74c3c; color:#fff; text-align:center; border:none; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
 .pdf-btn:hover { background:#c0392b; }
+.action-btn { cursor:pointer; padding:4px 8px; background:#eee; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; }
+.select-btn { cursor:pointer; padding:4px 10px; background:#3498db; color:#fff; border:none; border-radius:4px; font-size:0.8rem; margin-left:4px; white-space:nowrap; }
+.select-btn:hover { background:#2980b9; }
+
+/* Modal Styles */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 999;
+}
+.modal-content {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #fff; width: 95%; max-width: 800px; max-height: 90vh;
+  overflow-y: auto; border-radius: 8px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.modal-close {
+  position: absolute; top: 15px; right: 20px; font-size: 1.8rem; cursor: pointer; color: #aaa; z-index:10;
+}
+.modal-close:hover { color: #000; }
+
+/* Category Buttons Grid */
+.category-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px;
+}
+@media(max-width:600px){ .category-grid { grid-template-columns: 1fr; } }
+
+.cat-btn {
+  background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px;
+  padding: 20px 10px; cursor: pointer; transition: 0.2s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.cat-btn:hover { background: #e2e6ea; border-color: #adb5bd; transform: translateY(-2px); }
+.cat-btn strong { font-size: 1.1rem; color: #2c3e50; margin-bottom: 5px; display:block; }
+.cat-btn small { font-size: 0.8rem; color: #666; }
+
+/* Step 2 Layout */
+.back-btn {
+  background: #6c757d; color: #fff; border: none; padding: 5px 12px;
+  border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-bottom: 10px;
+}
+.back-btn:hover { background: #5a6268; }
+
+.ref-image-box {
+  text-align: center; margin-bottom: 20px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd;
+}
+.ref-image-box img {
+  max-width: 100%; max-height: 300px; height: auto; display: block; margin: 0 auto;
+}
+.spec-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+.spec-table th { background:#2c3e50; color:#fff; padding:8px; border:1px solid #ccc; text-align:center; }
+.spec-table td { padding:8px; border:1px solid #ccc; cursor:pointer; }
+.spec-table tr:hover td { background:#eaf2f8; }
 
 /* Force Break Elements */
 .pdf-break { display: none; }
@@ -121,7 +173,10 @@ body.pdf-mode .cols-2 { gap: 15px !important; }
 body.pdf-mode .tabs, 
 body.pdf-mode .pdf-btn,
 body.pdf-mode .footer-link-box,
-body.pdf-mode .tab-btn {
+body.pdf-mode .tab-btn,
+body.pdf-mode .action-btn,
+body.pdf-mode .select-btn,
+body.pdf-mode .modal-overlay {
     display: none !important;
 }
 
@@ -136,7 +191,6 @@ body.pdf-mode, body.pdf-mode input, body.pdf-mode select, body.pdf-mode h1, body
 }
 
 /* Page Break Rules */
-/* This element triggers the page break safely */
 body.pdf-mode .pdf-break {
     display: block;
     height: 1px;
@@ -146,7 +200,6 @@ body.pdf-mode .pdf-break {
     break-before: page !important;
 }
 
-/* Avoid breaking inside cards/tables */
 body.pdf-mode .res-card, 
 body.pdf-mode .check-table,
 body.pdf-mode .row {
@@ -155,7 +208,6 @@ body.pdf-mode .row {
 
 /* Log Box Style for Print */
 body.pdf-mode .detail-box {
-    /* DO NOT use page-break-before here, use the spacer above instead */
     page-break-inside: auto;
     background: #fff !important;
     color: #000 !important;
@@ -176,9 +228,7 @@ body.pdf-mode .log-val { color: #000 !important; }
 body.pdf-mode .log-formula { color: #444 !important; }
 </style>
 </head>
-<body>
 <body style="position:relative;">
-<!-- 右上ロゴ配置 -->
 <a href="https://arkhitek.co.jp/" target="_blank" rel="noopener">
   <img src="arkhitek_logo.png" alt="ARKHITEK Logo" class="arkhitek-logo-top" />
 </a>
@@ -189,6 +239,7 @@ body.pdf-mode .log-formula { color: #444 !important; }
   <div class="tabs" id="tab-controls">
     <div class="tab-btn active" onclick="switchTab('wall', this)">1. 必要壁量の算出</div>
     <div class="tab-btn" onclick="switchTab('column', this)">2. 柱の断面算定</div>
+    <div class="tab-btn" onclick="switchTab('wallcheck', this)">3. 壁量充足チェック</div>
   </div>
 
   <div id="wall" class="tab-content" style="display:block;">
@@ -397,6 +448,184 @@ body.pdf-mode .log-formula { color: #444 !important; }
 
   <div class="pdf-break"></div>
 
+  <div id="wallcheck" class="tab-content" style="display:none;">
+    <div class="section-header" style="display:block;">3. 壁量充足チェック</div>
+
+    <p>「1. 必要壁量の算出」で算出された必要壁量に対し、配置する耐力壁で充足しているか階ごと・方向ごとに判定します。<br>
+    ※Step1の計算結果が自動的に反映されます。<br>
+    ※仕様欄の「選択」ボタンを押すと告示1100号(R7改定)の一覧表から選択できます。<br>
+    ※仕様名欄でDelete/BackSpaceキーを押すと選択を解除して任意入力モードになります。</p>
+
+    <div id="wc_area_1f" style="margin-bottom:30px; border-bottom:2px dashed #ccc; padding-bottom:20px;">
+      <h3 style="background:#eee; padding:8px; border-left:5px solid #e74c3c;">1階の判定</h3>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px;">
+        <div style="background:#fff5f5;padding:12px;border-radius:6px;border:1px solid #ffcccc;">
+          <h4 style="margin:0 0 8px 0; color:#e74c3c;">1階 必要壁量条件</h4>
+          <div class="row">
+            <label>1F 必要壁量 (cm/㎡)</label>
+            <input type="number" id="wc_req_unit_1f" readonly style="background:#f1f1f1; font-weight:bold; color:#e74c3c;">
+          </div>
+          <div class="row">
+            <label>1F 床面積 (㎡)</label>
+            <input type="number" id="wc_area_1f_input" value="50" step="0.01" onchange="WallCheck.syncFromCalc()">
+          </div>
+        </div>
+        <div style="background:#fff7f0;padding:12px;border-radius:6px;border:1px solid #ffe5cc;">
+           <h4 style="margin:0 0 8px 0;">1階 必要総壁量 (cm)</h4>
+          <div class="row"><label>必要総壁量 (単位面積量×床面積)</label>
+            <input type="number" id="wc_req_total_1f" readonly style="background:#f1f1f1; font-size:1.2em;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:block;">
+        <div style="margin-bottom:20px;">
+          <div style="background:#f0f8ff;padding:6px;border-radius:4px;margin-bottom:4px;font-weight:bold;">1階 X方向</div>
+          <table id="wc_table_x_1f" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <thead>
+              <tr style="background:#f2f6fb;"><th style="padding:6px;">通り</th><th>仕様 (告示1100)</th><th>倍率</th><th>単位長さ(m)</th><th>箇所</th><th>存在壁量</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button class="action-btn" onclick="WallCheck.addRow('x', '1f')">＋ 行を追加</button>
+          <div style="margin-top:10px;padding:10px;background:#eef6ff;border-radius:6px;">
+            <div style="display:flex;justify-content:space-between;">
+              <div>存在: <span id="wc_exist_x_1f" style="font-weight:bold;color:#007bff;">0</span> cm</div>
+              <span id="wc_judge_x_1f" style="padding:2px 8px;border-radius:4px;background:#aaa;color:#fff;font-size:0.85rem;">未判定</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <div style="background:#fff0f6;padding:6px;border-radius:4px;margin-bottom:4px;font-weight:bold;">1階 Y方向</div>
+          <table id="wc_table_y_1f" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <thead>
+              <tr style="background:#fff6f8;"><th style="padding:6px;">通り</th><th>仕様 (告示1100)</th><th>倍率</th><th>単位長さ(m)</th><th>箇所</th><th>存在壁量</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button class="action-btn" onclick="WallCheck.addRow('y', '1f')">＋ 行を追加</button>
+          <div style="margin-top:10px;padding:10px;background:#fff0f6;border-radius:6px;">
+            <div style="display:flex;justify-content:space-between;">
+              <div>存在: <span id="wc_exist_y_1f" style="font-weight:bold;color:#007bff;">0</span> cm</div>
+              <span id="wc_judge_y_1f" style="padding:2px 8px;border-radius:4px;background:#aaa;color:#fff;font-size:0.85rem;">未判定</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="pdf-break"></div>
+
+    <div id="wc_area_2f">
+      <h3 style="background:#eee; padding:8px; border-left:5px solid #3498db;">2階の判定</h3>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px;">
+        <div style="background:#f8faff;padding:12px;border-radius:6px;border:1px solid #dbeeff;">
+          <h4 style="margin:0 0 8px 0; color:#3498db;">2階 必要壁量条件</h4>
+          <div class="row">
+            <label>2F 必要壁量 (cm/㎡)</label>
+            <input type="number" id="wc_req_unit_2f" readonly style="background:#f1f1f1; font-weight:bold; color:#3498db;">
+          </div>
+          <div class="row">
+            <label>2F 床面積 (㎡)</label>
+            <input type="number" id="wc_area_2f_input" value="50" step="0.01" onchange="WallCheck.syncFromCalc()">
+          </div>
+        </div>
+        <div style="background:#fff7f0;padding:12px;border-radius:6px;border:1px solid #ffe5cc;">
+          <h4 style="margin:0 0 8px 0;">2階 必要総壁量 (cm)</h4>
+          <div class="row"><label>必要総壁量 (単位面積量×床面積)</label>
+            <input type="number" id="wc_req_total_2f" readonly style="background:#f1f1f1; font-size:1.2em;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:block;">
+        <div style="margin-bottom:20px;">
+          <div style="background:#f0f8ff;padding:6px;border-radius:4px;margin-bottom:4px;font-weight:bold;">2階 X方向</div>
+          <table id="wc_table_x_2f" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <thead>
+              <tr style="background:#f2f6fb;"><th style="padding:6px;">通り</th><th>仕様 (告示1100)</th><th>倍率</th><th>単位長さ(m)</th><th>箇所</th><th>存在壁量</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button class="action-btn" onclick="WallCheck.addRow('x', '2f')">＋ 行を追加</button>
+          <div style="margin-top:10px;padding:10px;background:#eef6ff;border-radius:6px;">
+            <div style="display:flex;justify-content:space-between;">
+              <div>存在: <span id="wc_exist_x_2f" style="font-weight:bold;color:#007bff;">0</span> cm</div>
+              <span id="wc_judge_x_2f" style="padding:2px 8px;border-radius:4px;background:#aaa;color:#fff;font-size:0.85rem;">未判定</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <div style="background:#fff0f6;padding:6px;border-radius:4px;margin-bottom:4px;font-weight:bold;">2階 Y方向</div>
+          <table id="wc_table_y_2f" style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <thead>
+              <tr style="background:#fff6f8;"><th style="padding:6px;">通り</th><th>仕様 (告示1100)</th><th>倍率</th><th>単位長さ(m)</th><th>箇所</th><th>存在壁量</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button class="action-btn" onclick="WallCheck.addRow('y', '2f')">＋ 行を追加</button>
+          <div style="margin-top:10px;padding:10px;background:#fff0f6;border-radius:6px;">
+             <div style="display:flex;justify-content:space-between;">
+              <div>存在: <span id="wc_exist_y_2f" style="font-weight:bold;color:#007bff;">0</span> cm</div>
+              <span id="wc_judge_y_2f" style="padding:2px 8px;border-radius:4px;background:#aaa;color:#fff;font-size:0.85rem;">未判定</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+  </div>
+
+  <div id="specModal" class="modal-overlay" onclick="WallCheck.closeModal(event)">
+      <div class="modal-content">
+        <span class="modal-close" onclick="document.getElementById('specModal').style.display='none'">&times;</span>
+        
+        <div id="modal-step1">
+          <h3 style="text-align:center; margin-top:0;">仕様の分類を選択してください</h3>
+          <p style="text-align:center; color:#666; font-size:0.9rem;">該当する工法をクリックすると詳細一覧が表示されます。</p>
+          <div class="category-grid">
+            <button class="cat-btn" onclick="WallCheck.showCategory('okabe')">
+              <strong>大壁仕様</strong>
+              <small>柱・間柱の外側に面材を張る</small>
+            </button>
+            <button class="cat-btn" onclick="WallCheck.showCategory('okabe_floor')">
+              <strong>大壁床勝ち仕様</strong>
+              <small>床合板の上から面材を張る</small>
+            </button>
+            <button class="cat-btn" onclick="WallCheck.showCategory('uke')">
+              <strong>受材仕様</strong>
+              <small>真壁・真壁床勝ち（受材を使用）</small>
+            </button>
+          </div>
+        </div>
+
+        <div id="modal-step2" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <button class="back-btn" onclick="WallCheck.backStep1()">« 分類選択に戻る</button>
+            <h3 id="modal-cat-title" style="margin:0; font-size:1.1rem;"></h3>
+          </div>
+
+          <div class="ref-image-box">
+            <img id="modal-ref-image" src="" alt="参考詳細図">
+            <p style="margin:5px 0 0 0; font-size:0.8rem; color:#666;">※参考詳細図（出典：告示1100号）</p>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="spec-table" id="modal-target-table">
+              <thead>
+                <tr><th>面材の種類</th><th>釘・ねじ</th><th>P1</th><th>P2</th><th>倍率</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p style="font-size:0.85rem; color:#666; margin-top:8px;">※行をクリックすると反映されます。</p>
+        </div>
+      </div>
+  </div>
+
+  <div class="pdf-break"></div>
+
   <div class="detail-box" id="calc_log"></div>
 
   <div class="footer-link-box">
@@ -414,6 +643,11 @@ window.switchTab = function(id, btnElement) {
   if (target) target.style.display = 'block';
   document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
   if (btnElement) btnElement.classList.add('active');
+
+  // タブ切り替え時に念のため同期
+  if(id === 'wallcheck' && window.WallCheck) {
+     WallCheck.syncFromCalc();
+  }
 };
 
 /* ===== PDF Generation ===== */
@@ -434,7 +668,6 @@ function genPDF() {
   btn.textContent = "PDF生成中...";
 
   // 2. HTML2PDF オプション設定
-  // ページ区切りはCSSの .pdf-break に任せる（重複指定を避ける）
   const opt = {
     margin:       10, // mm
     filename:     'structure_calculation.pdf',
@@ -458,8 +691,8 @@ function genPDF() {
 }
 
 /* ===== Helpers ===== */
-const val = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; };
-const txt = (id, v) => { document.getElementById(id).textContent = v; };
+const val = id => { const el = document.getElementById(id); if(!el) return 0; const v = parseFloat(el.value); return isNaN(v) ? 0 : v; };
+const txt = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; else console.warn('txt: missing', id); };
 const roundup_to_10 = x => Math.ceil(x / 10.0) * 10.0;
 
 /* ===== Material DB ===== */
@@ -756,6 +989,11 @@ const Calc = {
       txt('disp_sw2', '-');
       this.calcColumnData(Gr, w_out2, w_in2, w_out1, w_in1, Ms);
     }
+
+    // ★追加: Step3の自動同期
+    if(typeof WallCheck !== 'undefined' && WallCheck.initDone) {
+      WallCheck.syncFromCalc();
+    }
   },
 
   calcColumnData(Gr, w_out2, w_in2, w_out1, w_in1, Ms){
@@ -857,12 +1095,378 @@ const Calc = {
 
 /* ===== Init ===== */
 Mat.init();
-const UI = { update: () => { const stories=parseInt(document.getElementById('stories').value); const is2F = (stories===2); document.getElementById('grp_h2').style.display=is2F?'block':'none'; document.getElementById('grp_area2').style.display=is2F?'block':'none'; document.getElementById('opt_col_2f').disabled = !is2F; if(!is2F && document.getElementById('col_floor').value==='2') document.getElementById('col_floor').value='1'; }, toggle: (key) => { let sel; if(key==='solar') sel=document.getElementById('mat_solar').value; else if(key==='snow') sel=document.getElementById('is_heavy_snow').value; else sel=document.getElementById('sel_insul_'+key).value; const pnl = (key==='snow')?document.getElementById('pnl_snow'):(key==='solar')?document.getElementById('pnl_solar'):(key==='roof')?document.getElementById('pnl_insul_roof'):document.getElementById('pnl_insul_wall'); const show = (key==='snow') ? (sel==='yes') : (sel==='custom'); if(pnl) pnl.style.display = show ? 'grid' : 'none'; } };
+const UI = { 
+  update: () => { 
+    const stories=parseInt(document.getElementById('stories').value); 
+    const is2F = (stories===2); 
+    
+    // Step 1 UI
+    document.getElementById('grp_h2').style.display=is2F?'block':'none'; 
+    document.getElementById('grp_area2').style.display=is2F?'block':'none'; 
+    document.getElementById('opt_col_2f').disabled = !is2F; 
+    if(!is2F && document.getElementById('col_floor').value==='2') document.getElementById('col_floor').value='1'; 
+
+    // Step 3 UI
+    const wc2F = document.getElementById('wc_area_2f');
+    if(wc2F) wc2F.style.display = is2F ? 'block' : 'none';
+  }, 
+  toggle: (key) => { 
+    let sel; 
+    if(key==='solar') sel=document.getElementById('mat_solar').value; 
+    else if(key==='snow') sel=document.getElementById('is_heavy_snow').value; 
+    else sel=document.getElementById('sel_insul_'+key).value; 
+    const pnl = (key==='snow')?document.getElementById('pnl_snow'):(key==='solar')?document.getElementById('pnl_solar'):(key==='roof')?document.getElementById('pnl_insul_roof'):document.getElementById('pnl_insul_wall'); 
+    const show = (key==='snow') ? (sel==='yes') : (sel==='custom'); 
+    if(pnl) pnl.style.display = show ? 'grid' : 'none'; 
+  } 
+};
 UI.update();
-Calc.exec();
 </script>
+
+<script>
+// データセット: 画像から書き起こした告示1100号(R7.4.1)の内容
+const SPEC_DATA_OKABE = [
+  {name:"構造用パーティクルボード", nail:"N50 又は NZ50", p1:75, p2:150, ratio:4.3},
+  {name:"構造用MDF", nail:"N50 又は NZ50", p1:75, p2:150, ratio:4.3},
+  {name:"構造用合板 9mm", nail:"CN50 又は CNZ50", p1:75, p2:150, ratio:3.7},
+  {name:"構造用パネル(OSB) 9mm", nail:"N50 又は NZ50", p1:75, p2:150, ratio:3.7},
+  {name:"構造用合板 5mm", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.5, note:"外:7.5mm"},
+  {name:"パーティクルボード 12mm", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.5},
+  {name:"構造用パーティクルボード", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.5},
+  {name:"構造用MDF", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.5},
+  {name:"構造用パネル(OSB) 9mm", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.5},
+  {name:"硬質木片セメント板 12mm", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.0},
+  {name:"ハードボード 5mm", nail:"N50 又は NZ50", p1:150, p2:150, ratio:2.0},
+  {name:"炭酸マグネシウム板 12mm", nail:"GNF40 又は CNC40", p1:150, p2:150, ratio:2.0},
+  {name:"パルプセメント板 8mm", nail:"GNF40 又は CNC40", p1:150, p2:150, ratio:1.5},
+  {name:"構造用石膏ボードA種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.7},
+  {name:"構造用石膏ボードB種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.2},
+  {name:"石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:0.9},
+  {name:"強化石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:0.9},
+  {name:"シージングボード 12mm", nail:"SN40", p1:100, p2:200, ratio:1.0},
+  {name:"ラスシート メタルラス0.6mm以上", nail:"N38 又は NZ38", p1:150, p2:150, ratio:1.0}
+];
+
+const SPEC_DATA_OKABE_FLOOR = [
+  {name:"構造用パーティクルボード", nail:"N50又はNZ50", p1:75, p2:150, ratio:4.3, note:"受材30x60 M75d120以下"},
+  {name:"構造用MDF", nail:"N50又はNZ50", p1:75, p2:150, ratio:4.3, note:"受材30x60 M75d120以下"},
+  {name:"構造用合板 9mm", nail:"CN50又はCNZ50", p1:75, p2:150, ratio:3.7, note:"受材30x60 M75d120以下"},
+  {name:"構造用パネル(OSB) 9mm", nail:"N50又はNZ50", p1:75, p2:150, ratio:3.7, note:"受材30x60 M75d120以下"},
+  {name:"構造用合板 5mm", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75d200以下 外:7.5mm"},
+  {name:"パーティクルボード 12mm", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75d200以下"},
+  {name:"構造用パーティクルボード", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75d200以下"},
+  {name:"構造用MDF", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75d200以下"},
+  {name:"構造用石膏ボードA種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.6, note:"受材30x40 M75d300以下"},
+  {name:"構造用石膏ボードB種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.0, note:"受材30x40 M75d300以下"},
+  {name:"石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:0.9, note:"受材30x40 M75d300以下"},
+  {name:"強化石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:0.9, note:"受材30x40 M75d300以下"}
+];
+
+const SPEC_DATA_UKE = [
+  {name:"構造用パーティクルボード", nail:"N50又はNZ50", p1:75, p2:150, ratio:4.0, note:"受材30x60 M75,N275d120以下"},
+  {name:"構造用MDF", nail:"N50又はNZ50", p1:75, p2:150, ratio:4.0, note:"受材30x60 M75,N275d120以下"},
+  {name:"構造用合板 9mm", nail:"CN50又はCNZ50", p1:75, p2:150, ratio:3.3, note:"受材30x40 M75,N275d200以下"},
+  {name:"構造用パネル(OSB) 9mm", nail:"N50又はNZ50", p1:75, p2:150, ratio:3.3, note:"受材30x40 M75,N275d200以下"},
+  {name:"構造用合板 7.5mm", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"パーティクルボード 12mm", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"構造用パーティクルボード", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"構造用MDF", nail:"N50又はNZ50", p1:150, p2:150, ratio:2.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"石膏ラスボード 9mm", nail:"GNF30,GNC32,WSN,DTSN", p1:150, p2:150, ratio:1.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"構造用石膏ボードA種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.5, note:"受材30x40 M75,N275d300以下"},
+  {name:"構造用石膏ボードB種 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.3, note:"受材30x40 M75,N275d300以下"},
+  {name:"石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.0, note:"受材30x40 M75,N275d300以下"},
+  {name:"強化石膏ボード 12mm", nail:"GNF40,GNC40,WSN,DTSN", p1:150, p2:150, ratio:1.0, note:"受材30x40 M75,N275d300以下"},
+  {name:"シージングボード 12mm", nail:"SN40", p1:100, p2:200, ratio:1.0, note:"受材30x60 M75,N275d300以下"},
+  {name:"ラスシート メタルラス0.6mm以上", nail:"N38 又は NZ38", p1:150, p2:150, ratio:1.0, note:"受材30x40 M75,N275d300以下"}
+];
+
+const WallCheck = {
+  initDone: false,
+  currentTargetRow: null,
+
+  // axis: 'x' or 'y', floor: '1f' or '2f'
+  addRow(axis, floor) {
+    const tableId = `wc_table_${axis}_${floor}`;
+    const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+    
+    // Determine default grid name (Auto Increment)
+    const prefix = axis.toUpperCase();
+    let nextNum = 1;
+    const rows = table.getElementsByTagName('tr');
+    if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        // The first input is the grid name input
+        const lastInput = lastRow.querySelector('input[type="text"]');
+        if(lastInput && lastInput.value) {
+            const match = lastInput.value.match(/(\d+)$/);
+            if (match) {
+                nextNum = parseInt(match[1], 10) + 1;
+            } else {
+                nextNum = rows.length + 1;
+            }
+        } else {
+            nextNum = rows.length + 1;
+        }
+    }
+    const defaultGrid = `${prefix}${nextNum}`;
+    
+    const tr = document.createElement('tr');
+
+    // 通り (Grid Line)
+    const td1 = document.createElement('td');
+    td1.innerHTML = `<input type="text" value="${defaultGrid}" style="width:100%;">`;
+    tr.appendChild(td1);
+
+    // 仕様（選択ボタン式）
+    const td2 = document.createElement('td');
+    td2.innerHTML = `
+      <div style="display:flex; align-items:center;">
+        <input type="text" class="wc_name" readonly placeholder="任意"
+               style="width:100%; font-size:0.8rem; background:#f9f9f9; cursor:pointer;"
+               title="Deleteキーで選択解除"
+               onkeydown="WallCheck.handleNameKeydown(event, this, '${floor}')">
+        <button type="button" class="select-btn" onclick="WallCheck.openModal(this)">選択</button>
+      </div>
+    `;
+    tr.appendChild(td2);
+
+    // 倍率
+    const td3 = document.createElement('td');
+    td3.innerHTML = `<input type="number" class="wc_ratio" value="0" step="0.1"
+                      oninput="WallCheck.rowUpdateParent(this, '${floor}')"
+                      style="width:100%;text-align:center;">`;
+    tr.appendChild(td3);
+
+    // 単位長さ(m) - Default 0.91
+    const td4 = document.createElement('td');
+    td4.innerHTML = `<input type="number" class="wc_len" step="0.01" value="0.91" oninput="WallCheck.rowUpdateParent(this, '${floor}')" placeholder="0.00" style="width:100%;">`;
+    tr.appendChild(td4);
+
+    // 箇所
+    const td5 = document.createElement('td');
+    td5.innerHTML = `<input type="number" class="wc_count" value="1" oninput="WallCheck.rowUpdateParent(this, '${floor}')" style="width:100%;text-align:center;">`;
+    tr.appendChild(td5);
+
+    // 存在壁量(cm)
+    const td6 = document.createElement('td');
+    td6.innerHTML = '<input type="number" class="wc_val" readonly value="0" style="width:100%;background:#f1f1f1;text-align:right;">';
+    tr.appendChild(td6);
+
+    // 削除
+    const td7 = document.createElement('td');
+    td7.innerHTML = `<button type="button" style="color:red;border:none;background:none;cursor:pointer;" onclick="WallCheck.deleteRow(this, '${floor}')">×</button>`;
+    tr.appendChild(td7);
+
+    table.appendChild(tr);
+  },
+
+  // 行計算関連
+  rowUpdateParent(el, floor) {
+    const tr = el.parentNode.parentNode;
+    WallCheck.rowRecalc(tr, floor);
+  },
+
+  rowRecalc(tr, floor) {
+    const ratio = parseFloat(tr.querySelector('.wc_ratio').value) || 0;
+    const len = parseFloat(tr.querySelector('.wc_len').value) || 0;
+    const count = parseFloat(tr.querySelector('.wc_count').value) || 0;
+    const wallVal = len * 100 * ratio * count; // m -> cm
+    tr.querySelector('.wc_val').value = isFinite(wallVal) ? wallVal.toFixed(1) : 0;
+    this.recalcFloor(floor);
+  },
+
+  deleteRow(btn, floor) {
+    const tr = btn.parentNode.parentNode;
+    tr.parentNode.removeChild(tr);
+    this.recalcFloor(floor);
+  },
+
+  sumTable(axis, floor) {
+    let sum = 0;
+    const tableId = `wc_table_${axis}_${floor}`;
+    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+    rows.forEach(r => {
+      sum += parseFloat(r.querySelector('.wc_val').value) || 0;
+    });
+    return sum;
+  },
+
+  // キー操作：選択解除
+  handleNameKeydown(e, el, floor) {
+    if (e.keyCode === 46 || e.keyCode === 8) { // Del or BS
+      e.preventDefault();
+      const tr = el.parentNode.parentNode.parentNode;
+      el.value = "";
+      const ratioInput = tr.querySelector('.wc_ratio');
+      ratioInput.readOnly = false;
+      ratioInput.style.backgroundColor = "#fff";
+      ratioInput.value = 0;
+      ratioInput.focus();
+      this.rowRecalc(tr, floor);
+    }
+  },
+
+  // --- モーダル制御 ---
+  openModal(btn) {
+    this.currentTargetRow = btn.parentNode.parentNode.parentNode;
+    // 表示リセット
+    document.getElementById('modal-step1').style.display = 'block';
+    document.getElementById('modal-step2').style.display = 'none';
+    document.getElementById('specModal').style.display = 'block';
+  },
+
+  closeModal(e) {
+    if(e.target === document.getElementById('specModal')) {
+       document.getElementById('specModal').style.display = 'none';
+    }
+  },
+
+  selectSpec(name, ratio) {
+    if(!this.currentTargetRow) return;
+    const tr = this.currentTargetRow;
+    
+    // 値をセット
+    tr.querySelector('.wc_name').value = name;
+    
+    // 倍率をセットし、ロック
+    const ratioInput = tr.querySelector('.wc_ratio');
+    ratioInput.value = ratio;
+    ratioInput.readOnly = true;
+    ratioInput.style.backgroundColor = "#f9f9f9";
+    
+    // 再計算
+    const tableId = tr.parentNode.parentNode.id; 
+    const floor = tableId.split('_').pop(); 
+    this.rowRecalc(tr, floor);
+    
+    document.getElementById('specModal').style.display = 'none';
+  },
+
+  showCategory(type) {
+    let title = "";
+    let imgSrc = "";
+    let data = [];
+
+    if (type === 'okabe') {
+      title = "【大壁仕様】一覧";
+      imgSrc = "oukabe.png";
+      data = SPEC_DATA_OKABE;
+    } else if (type === 'okabe_floor') {
+      title = "【大壁床勝ち仕様】一覧";
+      imgSrc = "oukabe_yuka.png";
+      data = SPEC_DATA_OKABE_FLOOR;
+    } else if (type === 'uke') {
+      title = "【受材仕様（真壁・真壁床勝ち）】一覧";
+      imgSrc = "shinkabe.png";
+      data = SPEC_DATA_UKE;
+    }
+
+    document.getElementById('modal-cat-title').textContent = title;
+    const imgEl = document.getElementById('modal-ref-image');
+    if(imgEl) imgEl.src = imgSrc;
+    
+    const tbody = document.getElementById('modal-target-table').getElementsByTagName('tbody')[0];
+    tbody.innerHTML = "";
+
+    data.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:left;">${d.name}${d.note ? `<div style="font-size:0.75em;color:#666;">${d.note}</div>` : ''}</td>
+        <td style="text-align:center">${d.nail}</td>
+        <td style="text-align:center">${d.p1}</td>
+        <td style="text-align:center">${d.p2}</td>
+        <td style="text-align:center;font-weight:bold;color:#3498db;font-size:1.1em;">${d.ratio.toFixed(1)}</td>
+      `;
+      tr.onclick = () => { WallCheck.selectSpec(d.name, d.ratio); };
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('modal-step1').style.display = 'none';
+    document.getElementById('modal-step2').style.display = 'block';
+  },
+
+  backStep1() {
+    document.getElementById('modal-step2').style.display = 'none';
+    document.getElementById('modal-step1').style.display = 'block';
+  },
+
+  syncFromCalc() {
+    const lw1_el = document.getElementById('disp_lw1');
+    const lw2_el = document.getElementById('disp_lw2');
+    const lw1 = (lw1_el && parseFloat(lw1_el.textContent)) || 0;
+    const lw2 = (lw2_el && parseFloat(lw2_el.textContent)) || 0;
+    
+    // 表示更新
+    document.getElementById('wc_req_unit_1f').value = isFinite(lw1) ? lw1 : 0;
+    document.getElementById('wc_req_unit_2f').value = isFinite(lw2) ? lw2 : 0;
+
+    // 床面積の取得
+    const a1_orig = val('area1');
+    const a2_orig = val('area2');
+    
+    const in_a1 = document.getElementById('wc_area_1f_input');
+    const in_a2 = document.getElementById('wc_area_2f_input');
+    
+    if(document.activeElement !== in_a1) in_a1.value = a1_orig;
+    if(document.activeElement !== in_a2) in_a2.value = a2_orig;
+    
+    const A1 = parseFloat(in_a1.value) || 0;
+    const A2 = parseFloat(in_a2.value) || 0;
+
+    // 必要総壁量の計算
+    const reqTotal1 = (isFinite(lw1) ? lw1 : 0) * A1;
+    const reqTotal2 = (isFinite(lw2) ? lw2 : 0) * A2;
+
+    document.getElementById('wc_req_total_1f').value = reqTotal1.toFixed(1);
+    document.getElementById('wc_req_total_2f').value = reqTotal2.toFixed(1);
+
+    // 再判定
+    this.recalcFloor('1f');
+    this.recalcFloor('2f');
+  },
+
+  recalcFloor(floor) {
+    const reqTotal = parseFloat(document.getElementById(`wc_req_total_${floor}`).value) || 0;
+    
+    ['x', 'y'].forEach(axis => {
+        const exist = this.sumTable(axis, floor);
+        document.getElementById(`wc_exist_${axis}_${floor}`).textContent = exist.toFixed(1);
+        
+        const judgeEl = document.getElementById(`wc_judge_${axis}_${floor}`);
+        
+        // 判定ロジック
+        if(reqTotal <= 0) {
+           judgeEl.textContent = '-';
+           judgeEl.style.background = '#ccc';
+        } else {
+           if(exist >= reqTotal) {
+             const ratio = (exist/reqTotal*100).toFixed(0);
+             judgeEl.textContent = `OK (${ratio}%)`;
+             judgeEl.style.background = '#28a745';
+           } else {
+             const diff = (reqTotal - exist).toFixed(1);
+             judgeEl.textContent = `NG (不足 ${diff}cm)`;
+             judgeEl.style.background = '#dc3545';
+           }
+        }
+    });
+  }
+};
+
+// 初期化
+window.addEventListener('load', function(){
+  WallCheck.initDone = true;
+  // 各テーブルに1行ずつ追加
+  WallCheck.addRow('x', '1f');
+  WallCheck.addRow('y', '1f');
+  WallCheck.addRow('x', '2f');
+  WallCheck.addRow('y', '2f');
+  // 初回同期
+  Calc.exec();
+});
+</script>
+
 </body>
-<!-- 最下部ロゴ配置 -->
 <a href="https://arkhitek.co.jp/" target="_blank" rel="noopener">
   <img src="arkhitek_logo.png" alt="ARKHITEK Logo" class="arkhitek-logo-bottom" />
 </a>
