@@ -103,15 +103,40 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 .spec-table td { padding:8px; border:1px solid #ccc; cursor:pointer; }
 .spec-table tr:hover td { background:#eaf2f8; }
 .pdf-break { display: none; }
+
+/* PDF出力項目チェック（画面用） */
+.pdf-controls { margin-top: 10px; padding: 12px; background:#eaf2f8; border:1px solid #bdc3c7; border-radius:6px; }
+.pdf-controls label { display:inline-flex; align-items:center; gap:6px; margin-right:14px; margin-top:6px; font-size:0.9rem; font-weight:700; color:var(--primary); }
 body.pdf-mode { background: #fff !important; padding: 0 !important; margin: 0 !important; width: 100% !important; overflow: visible !important; }
-body.pdf-mode .container { width: 700px !important; max-width: 700px !important; min-width: 700px !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
+/* PDFはA4幅に合わせて自動縮尺されるよう固定幅をやめる */
+body.pdf-mode .container { width: auto !important; max-width: none !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
 body.pdf-mode .cols-2 { gap: 15px !important; }
 body.pdf-mode .tabs, body.pdf-mode .pdf-btn, body.pdf-mode .footer-link-box, body.pdf-mode .tab-btn, body.pdf-mode .action-btn, body.pdf-mode .select-btn, body.pdf-mode .modal-overlay, body.pdf-mode .tools-bar { display: none !important; }
 body.pdf-mode .tab-content { display: block !important; }
 body.pdf-mode .section-header { display: block !important; margin-top: 0 !important; }
 body.pdf-mode, body.pdf-mode input, body.pdf-mode select, body.pdf-mode h1, body.pdf-mode label { color: #000 !important; background: transparent !important; }
-body.pdf-mode .pdf-break { display: block; height: 1px; margin: 0; border: none; page-break-before: always !important; break-before: page !important; }
-body.pdf-mode .res-card, body.pdf-mode .check-table, body.pdf-mode .row, body.pdf-mode .balance-box { page-break-inside: avoid; }
+/* 旧: pdf-breakは空白ページの原因になりやすいためPDFでは無効化 */
+body.pdf-mode .pdf-break { display: none !important; }
+
+/* PDF内での表示制御 */
+body.pdf-mode .pdf-controls { display: none !important; }
+body.pdf-mode .pdf-hide { display: none !important; }
+
+/* セクション単位の改ページ */
+body.pdf-mode .pdf-page-break { page-break-before: always !important; break-before: page !important; }
+/* テーブルがページをまたげず切れる問題を避けるため、テーブル自体は分割可、行は分割不可 */
+body.pdf-mode table { page-break-inside: auto; break-inside: auto; }
+body.pdf-mode tr { page-break-inside: avoid; break-inside: avoid; }
+
+/* カードはページ内に収める */
+body.pdf-mode .res-card { page-break-inside: avoid; break-inside: avoid; }
+
+/* 横スクロールラッパーはPDFでは無効（切れの原因） */
+body.pdf-mode .table-scroll { overflow: visible !important; }
+
+/* 入力欄はPDFで少しコンパクトに */
+body.pdf-mode input, body.pdf-mode select { font-size: 10px !important; padding: 2px 4px !important; }
+body.pdf-mode label { font-size: 10px !important; }
 body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important; color: #000 !important; border: 1px solid #000 !important; padding: 10px !important; margin-top: 10px !important; }
 
 /* スマホ表示時のテーブル横スクロール */
@@ -137,8 +162,8 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
 
   <div class="tabs" id="tab-controls">
     <div class="tab-btn active" onclick="switchTab('wall', this)">1. 必要壁量の算出</div>
-    <div class="tab-btn" onclick="switchTab('column', this)">2. 柱の断面算定</div>
-    <div class="tab-btn" onclick="switchTab('wallcheck', this)">3. 壁量/バランス</div>
+    <div class="tab-btn" onclick="switchTab('wallcheck', this)">2. 壁量/バランス</div>
+    <div class="tab-btn" onclick="switchTab('column', this)">3. 柱の断面算定</div>
   </div>
 
   <div id="wall" class="tab-content" style="display:block;">
@@ -235,6 +260,7 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
       </div>
     </div>
 
+    <div class="pdf-page-break"></div>
     <h3 style="margin-top:16px;">計算結果</h3>
       <div class="cols-2">
         <div>
@@ -259,7 +285,7 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
   <div class="pdf-break"></div>
 
   <div id="column" class="tab-content" style="display:none;">
-    <div class="section-header">2. 柱の断面算定</div>
+    <div class="section-header">3. 柱の断面算定</div>
     <div class="cols-2">
       <div>
         <div class="input-group-title">柱の検討条件</div>
@@ -322,7 +348,7 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
   <div class="pdf-break"></div>
 
   <div id="wallcheck" class="tab-content" style="display:none;">
-    <div class="section-header" style="display:block;">3. 壁量充足・バランスチェック</div>
+    <div class="section-header" style="display:block;">2. 壁量充足・バランスチェック</div>
     
     <!-- 風圧力の検討 (チェックボックスで表示切替) -->
     <div style="background:#fff3e0; padding:15px; border-radius:8px; border:1px solid #ffcc80; margin-bottom:20px;">
@@ -454,6 +480,7 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
       </div>
     </div>
 
+    <div class="pdf-page-break"></div>
     <div id="wc_area_2f">
        <h3 style="background:#eee; padding:8px; border-left:5px solid #3498db;">2階の判定</h3>
        
@@ -553,6 +580,16 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
   <div class="footer-link-box">
     <a href="https://www.howtec.or.jp/publics/index/441/" target="_blank">参考資料：壁量等の基準（令和７年施行）設計支援ツール</a>
   </div>
+
+  <div class="pdf-controls" id="pdf-controls">
+    <div style="font-weight:bold; color:var(--primary); margin-bottom:6px;">PDF出力項目</div>
+    <label><input type="checkbox" id="pdf_out_wall" checked> 1. 必要壁量の算出</label>
+    <label><input type="checkbox" id="pdf_out_wallcheck" checked> 2. 壁量/バランス</label>
+    <label><input type="checkbox" id="pdf_out_column" checked> 3. 柱の断面算定</label>
+    <label><input type="checkbox" id="pdf_out_log" checked> 計算ログ</label>
+    <div style="font-size:0.8rem; color:#666; margin-top:6px;">※チェックを外した項目はPDFに出力しません。</div>
+  </div>
+
   <button class="pdf-btn" onclick="genPDF()" id="btn-export">計算書PDF出力</button>
 </div>
 
@@ -609,11 +646,76 @@ function genPDF() {
   if (typeof html2pdf === 'undefined') { alert("PDF生成ライブラリなし"); return; }
   const c = document.getElementById('main-container');
   const b = document.getElementById('btn-export');
+
+  const sections = [
+    { key: 'wall', el: document.getElementById('wall'), chk: document.getElementById('pdf_out_wall') },
+    { key: 'wallcheck', el: document.getElementById('wallcheck'), chk: document.getElementById('pdf_out_wallcheck') },
+    { key: 'column', el: document.getElementById('column'), chk: document.getElementById('pdf_out_column') },
+    { key: 'log', el: document.getElementById('calc_log'), chk: document.getElementById('pdf_out_log') }
+  ];
+
+  const enabled = sections.filter(s => s.el && s.chk && s.chk.checked);
+  if (enabled.length === 0) { alert('PDF出力項目を1つ以上選択してください'); return; }
+
+  // PDF用に表示/改ページをセット（後で必ず戻す）
+  sections.forEach(s => {
+    if (!s.el) return;
+    s.el.classList.remove('pdf-hide');
+    s.el.classList.remove('pdf-page-break');
+  });
+
+  enabled.forEach((s, idx) => {
+    if (!s.el) return;
+    if (idx > 0) s.el.classList.add('pdf-page-break');
+  });
+
+  sections.forEach(s => {
+    if (!s.el || !s.chk) return;
+    if (!s.chk.checked) s.el.classList.add('pdf-hide');
+  });
+
   document.body.classList.add('pdf-mode');
   b.textContent = "生成中...";
-  html2pdf().set({margin:10,filename:'calc.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4'},pagebreak:{mode:['css','legacy']}})
-  .from(c).save().then(()=>{ document.body.classList.remove('pdf-mode'); b.textContent="計算書PDF出力"; })
-  .catch(e=>{ console.error(e); document.body.classList.remove('pdf-mode'); b.textContent="計算書PDF出力"; });
+  html2pdf()
+    .set({
+      margin: 8,
+      filename: 'calc.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: Math.max(document.documentElement.scrollWidth, c.scrollWidth)
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: {
+        mode: ['css'],
+        before: '.pdf-page-break'
+      }
+    })
+    .from(c)
+    .save()
+    .then(() => {
+      document.body.classList.remove('pdf-mode');
+      b.textContent = "計算書PDF出力";
+      // 表示/改ページを元に戻す
+      sections.forEach(s => {
+        if (!s.el) return;
+        s.el.classList.remove('pdf-hide');
+        s.el.classList.remove('pdf-page-break');
+      });
+    })
+    .catch(e => {
+      console.error(e);
+      document.body.classList.remove('pdf-mode');
+      b.textContent = "計算書PDF出力";
+      sections.forEach(s => {
+        if (!s.el) return;
+        s.el.classList.remove('pdf-hide');
+        s.el.classList.remove('pdf-page-break');
+      });
+    });
 }
 
 /* ===== Data Manager (Pro Version - Fixed for X/Y) ===== */
@@ -906,7 +1008,10 @@ const Log = {
   render(){ 
     const box=document.getElementById('calc_log'); 
     box.innerHTML = '<h3>計算詳細ログ</h3>' + this.lines.map(l=>{ 
-      if(l.t==='h') return `<h4>${l.h}</h4>`; 
+      if(l.t==='h') {
+        const needsBreak = (typeof l.h === 'string') && l.h.startsWith('6. 必要壁量の決定');
+        return `${needsBreak ? '<div class="pdf-page-break"></div>' : ''}<h4>${l.h}</h4>`;
+      }
       return `<div class="log-row">
         <span class="log-key">${l.k}</span>
         ${l.f ? `<span class="log-formula">${l.f}</span>` : ''}
@@ -1275,7 +1380,7 @@ const WallCheck = {
     tr.dataset.rowId = rowId;
     const d = data || {name: prefix+nextNum, spec:'', ratio:0, len:0.91, count:1};
     tr.innerHTML = `<td><input type="text" class="wc_rowname" value="${d.name}" style="width:100%;"></td>
-      <td><div style="display:flex;"><input type="text" class="wc_name" value="${d.spec}" readonly style="width:100%;font-size:0.8rem;background:#f9f9f9;"><button class="select-btn" onclick="WallCheck.openModal(this)">選択</button></div></td>
+      <td><div style="display:flex;"><input type="text" class="wc_name" value="${d.spec}" style="width:100%;font-size:0.8rem;"><button class="select-btn" onclick="WallCheck.openModal(this)">選択</button></div></td>
       <td><input type="number" class="wc_ratio" value="${d.ratio}" step="0.1" oninput="WallCheck.rowUpdate(this,'${floor}')" style="width:100%;text-align:center;"></td>
       <td><input type="number" class="wc_len" value="${d.len}" step="0.01" oninput="WallCheck.rowUpdate(this,'${floor}')" style="width:100%;"></td>
       <td><input type="number" class="wc_count" value="${d.count}" oninput="WallCheck.rowUpdate(this,'${floor}')" style="width:100%;text-align:center;"></td>
