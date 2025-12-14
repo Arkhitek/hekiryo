@@ -139,6 +139,16 @@ body.pdf-mode input, body.pdf-mode select { font-size: 10px !important; padding:
 body.pdf-mode label { font-size: 10px !important; }
 body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important; color: #000 !important; border: 1px solid #000 !important; padding: 10px !important; margin-top: 10px !important; }
 
+/* 1. 必要壁量の算出：1ページ内に収めるためPDF時は詰める */
+body.pdf-mode #wall .cols-2 { gap: 10px !important; }
+body.pdf-mode #wall .row { margin-bottom: 6px !important; }
+body.pdf-mode #wall .input-group-title { margin-top: 8px !important; margin-bottom: 6px !important; padding-bottom: 2px !important; }
+body.pdf-mode #wall h3 { margin-top: 8px !important; margin-bottom: 6px !important; font-size: 12px !important; }
+body.pdf-mode #wall .res-card { padding: 8px !important; }
+body.pdf-mode #wall .res-sub { margin-top: 2px !important; font-size: 9px !important; }
+body.pdf-mode #wall #disp_lw1,
+body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
+
 /* スマホ表示時のテーブル横スクロール */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
 </style>
@@ -260,7 +270,6 @@ body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important
       </div>
     </div>
 
-    <div class="pdf-page-break"></div>
     <h3 style="margin-top:16px;">計算結果</h3>
       <div class="cols-2">
         <div>
