@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>木造軸組み工法用壁量・バランス・柱の断面算定プログラム (Full Ver)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 /* --- 既存スタイル --- */
 .arkhitek-logo-top { position: absolute; top: 20px; right: 30px; width: 120px; height: auto; z-index: 100; }
@@ -16,12 +16,6 @@ body{font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(
 .container{max-width:1000px;margin:0 auto;background:var(--panel);padding:24px;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}
 h1{text-align:center;color:var(--primary);margin:0 0 8px 0;font-size:1.4rem;}
 .subtitle{text-align:center;color:#7f8c8d;margin-bottom:10px;font-size:0.9rem;font-weight:bold;}
-/* Header Tools */
-.tools-bar { display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px; background:#eef2f7; padding:10px; border-radius:6px; }
-.tool-btn { font-size:0.85rem; padding:6px 12px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:4px; display:flex; align-items:center; gap:5px; }
-.tool-btn:hover { background:#f0f0f0; border-color:#999; }
-.tool-btn svg { width:14px; height:14px; fill:#555; }
-
 /* Grid & Layout */
 .cols-2{display:grid;grid-template-columns:1fr 1fr;gap:30px;}
 @media(max-width:768px){.cols-2{grid-template-columns:1fr;}}
@@ -58,8 +52,6 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 .ref-link-mini { font-size:0.75rem; color:#fff; background:var(--link); padding:2px 6px; border-radius:4px; text-decoration:none; margin-left:auto; }
 .footer-link-box { margin-top:30px; padding:15px; background:#eaf2f8; border:1px solid #bdc3c7; border-radius:6px; text-align:center; }
 .footer-link-box a { color:var(--link); font-weight:bold; text-decoration:none; font-size:0.95rem; }
-.pdf-btn { display:block; width:100%; max-width:300px; margin:20px auto 0; padding:12px; background:#e74c3c; color:#fff; text-align:center; border:none; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
-.pdf-btn:hover { background:#c0392b; }
 .action-btn { cursor:pointer; padding:4px 8px; background:#eee; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; }
 .select-btn { cursor:pointer; padding:4px 10px; background:#3498db; color:#fff; border:none; border-radius:4px; font-size:0.8rem; margin-left:4px; white-space:nowrap; }
 .select-btn:hover { background:#2980b9; }
@@ -104,53 +96,171 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 .spec-table tr:hover td { background:#eaf2f8; }
 .pdf-break { display: none; }
 
-/* PDF出力項目チェック（画面用） */
-.pdf-controls { margin-top: 10px; padding: 12px; background:#eaf2f8; border:1px solid #bdc3c7; border-radius:6px; }
-.pdf-controls label { display:inline-flex; align-items:center; gap:6px; margin-right:14px; margin-top:6px; font-size:0.9rem; font-weight:700; color:var(--primary); }
-body.pdf-mode { background: #fff !important; padding: 0 !important; margin: 0 !important; width: 100% !important; overflow: visible !important; }
-/* PDFはA4幅に合わせて自動縮尺されるよう固定幅をやめる */
-body.pdf-mode .container { width: auto !important; max-width: none !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
-body.pdf-mode .cols-2 { gap: 15px !important; }
-body.pdf-mode .tabs, body.pdf-mode .pdf-btn, body.pdf-mode .footer-link-box, body.pdf-mode .tab-btn, body.pdf-mode .action-btn, body.pdf-mode .select-btn, body.pdf-mode .modal-overlay, body.pdf-mode .tools-bar { display: none !important; }
-body.pdf-mode .tab-content { display: block !important; }
-body.pdf-mode .section-header { display: block !important; margin-top: 0 !important; }
-body.pdf-mode, body.pdf-mode input, body.pdf-mode select, body.pdf-mode h1, body.pdf-mode label { color: #000 !important; background: transparent !important; }
-/* 旧: pdf-breakは空白ページの原因になりやすいためPDFでは無効化 */
-body.pdf-mode .pdf-break { display: none !important; }
-
-/* PDF内での表示制御 */
-body.pdf-mode .pdf-controls { display: none !important; }
-body.pdf-mode .pdf-hide { display: none !important; }
-
-/* セクション単位の改ページ */
-body.pdf-mode .pdf-page-break { page-break-before: always !important; break-before: page !important; }
-/* テーブルがページをまたげず切れる問題を避けるため、テーブル自体は分割可、行は分割不可 */
-body.pdf-mode table { page-break-inside: auto; break-inside: auto; }
-body.pdf-mode tr { page-break-inside: avoid; break-inside: avoid; }
-
-/* カードはページ内に収める */
-body.pdf-mode .res-card { page-break-inside: avoid; break-inside: avoid; }
-
-/* 横スクロールラッパーはPDFでは無効（切れの原因） */
-body.pdf-mode .table-scroll { overflow: visible !important; }
-
-/* 入力欄はPDFで少しコンパクトに */
-body.pdf-mode input, body.pdf-mode select { font-size: 10px !important; padding: 2px 4px !important; }
-body.pdf-mode label { font-size: 10px !important; }
-body.pdf-mode .detail-box { page-break-inside: auto; background: #fff !important; color: #000 !important; border: 1px solid #000 !important; padding: 10px !important; margin-top: 10px !important; }
-
-/* 1. 必要壁量の算出：1ページ内に収めるためPDF時は詰める */
-body.pdf-mode #wall .cols-2 { gap: 10px !important; }
-body.pdf-mode #wall .row { margin-bottom: 6px !important; }
-body.pdf-mode #wall .input-group-title { margin-top: 8px !important; margin-bottom: 6px !important; padding-bottom: 2px !important; }
-body.pdf-mode #wall h3 { margin-top: 8px !important; margin-bottom: 6px !important; font-size: 12px !important; }
-body.pdf-mode #wall .res-card { padding: 8px !important; }
-body.pdf-mode #wall .res-sub { margin-top: 2px !important; font-size: 9px !important; }
-body.pdf-mode #wall #disp_lw1,
-body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
-
 /* スマホ表示時のテーブル横スクロール */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
+
+/* ====== 拡張セクション（データ管理／計算書／結果出力／ロジック解説） ====== */
+.ext-section {
+  margin: 20px auto 16px;
+  padding: 14px 18px 16px;
+  background: #fff;
+  border: 1px solid #c6cfdc;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.ext-section + .ext-section { margin-top: 12px; }
+.ext-h2 {
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: #fff;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.ext-note {
+  font-size: 0.85rem;
+  color: #3b4a60;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  background: #f0f4fa;
+  border-left: 3px solid #3498db;
+  border-radius: 3px;
+  line-height: 1.55;
+}
+.ext-note-sub {
+  background: transparent;
+  border-left: none;
+  padding: 4px 0;
+  font-size: 0.78rem;
+  color: #5a667a;
+}
+.ext-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.ext-label { font-size: 0.85rem; color: #3b4a60; font-weight: 700; }
+.ext-input-text {
+  margin-left: 6px;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  border: 1px solid #b8c2d3;
+  border-radius: 4px;
+  width: 320px;
+  background: #fff;
+  font-weight: normal;
+}
+.ext-input-text:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52,152,219,0.25);
+}
+.ext-btn {
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.12s;
+}
+.ext-btn:hover { background: #34495e; }
+.ext-btn.alt { background: #6a7a96; }
+.ext-btn.alt:hover { background: #87a0bd; }
+.ext-file-label { display: inline-block; cursor: pointer; }
+.ext-radio-bar {
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  background: #f4f6fa;
+  border: 1px solid #d4dae6;
+  border-radius: 3px;
+  margin-bottom: 8px;
+  color: #3b4a60;
+}
+.ext-radio-bar label { margin-left: 12px; font-weight: normal; }
+.ext-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+.ext-checkbox-grid label { font-weight: 700; }
+@media (max-width: 720px) {
+  .ext-checkbox-grid { grid-template-columns: 1fr 1fr; }
+}
+.ext-case-list {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #c6cfdc;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+table.ext-case-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: #fff;
+}
+table.ext-case-table th,
+table.ext-case-table td {
+  border: 1px solid #c6cfdc;
+  padding: 4px 8px;
+  text-align: right;
+  vertical-align: middle;
+}
+table.ext-case-table th {
+  background: #e9eef6;
+  color: #2c3e50;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.78rem;
+}
+table.ext-case-table td.l,
+table.ext-case-table th.l { text-align: left; }
+table.ext-case-table .res-ok { color: #27ae60; font-weight: 700; }
+table.ext-case-table .res-ng { color: #c0392b; font-weight: 700; }
+.ext-logic-doc { font-size: 0.85rem; line-height: 1.75; padding: 8px 12px 4px; }
+.ext-logic-doc h3 {
+  font-size: 0.95rem;
+  color: #2c3e50;
+  border-left: 4px solid #3498db;
+  padding-left: 8px;
+  margin: 14px 0 4px;
+}
+.ext-logic-doc p { margin: 4px 0 6px; }
+.ext-logic-doc ul, .ext-logic-doc ol { margin: 4px 0 8px; padding-left: 22px; }
+.ext-logic-doc li { margin-bottom: 3px; }
+.ext-formula {
+  background: #f4f6fa;
+  border-left: 3px solid #2c3e50;
+  padding: 6px 12px;
+  font-family: "Cambria Math", Consolas, serif;
+  font-size: 0.85rem;
+  margin: 4px 0 8px;
+  line-height: 1.85;
+  border-radius: 3px;
+}
+.ext-ref-list {
+  font-size: 0.82rem;
+  line-height: 1.85;
+  padding-left: 20px;
+}
+#logicSection details summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  padding: 4px 8px;
+}
+#logicSection details[open] summary { margin-bottom: 4px; }
 </style>
 </head>
 <body style="position:relative;">
@@ -158,15 +268,6 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
   <img src="arkhitek_logo.png" alt="ARKHITEK Logo" class="arkhitek-logo-top" />
 </a>
 <div class="container" id="main-container">
-  <div class="tools-bar">
-    <button class="tool-btn" onclick="DataMgr.saveToBrowser()">💾 ブラウザ保存</button>
-    <button class="tool-btn" onclick="DataMgr.loadFromBrowser()">📂 続きから</button>
-    <span style="border-right:1px solid #ccc; margin:0 5px;"></span>
-    <button class="tool-btn" onclick="DataMgr.exportJSON()">⬇ JSON保存</button>
-    <button class="tool-btn" onclick="document.getElementById('file-import').click()">⬆ JSON読込</button>
-    <input type="file" id="file-import" style="display:none;" accept=".json" onchange="DataMgr.importJSON(this)">
-  </div>
-
   <h1>木造軸組み工法用壁量・バランス・柱の断面算定プログラム</h1>
   <p class="subtitle">令和7年基準・地震/風圧・四分割対応</p>
 
@@ -654,16 +755,210 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
     <a href="https://www.howtec.or.jp/publics/index/441/" target="_blank">参考資料：壁量等の基準（令和７年施行）設計支援ツール</a>
   </div>
 
-  <div class="pdf-controls" id="pdf-controls">
-    <div style="font-weight:bold; color:var(--primary); margin-bottom:6px;">PDF出力項目</div>
-    <label><input type="checkbox" id="pdf_out_wall" checked> 1. 必要壁量の算出</label>
-    <label><input type="checkbox" id="pdf_out_wallcheck" checked> 2. 壁量/バランス</label>
-    <label><input type="checkbox" id="pdf_out_column" checked> 3. 柱の断面算定</label>
-    <label><input type="checkbox" id="pdf_out_log" checked> 計算ログ</label>
-    <div style="font-size:0.8rem; color:#666; margin-top:6px;">※チェックを外した項目はPDFに出力しません。</div>
-  </div>
+  <!-- ====================================================== -->
+  <!-- データ管理（複数ケース保存・読込）                     -->
+  <!-- ====================================================== -->
+  <section class="ext-section" id="dataMgmtSection">
+    <h2 class="ext-h2">データ管理（複数ケース保存・読込）</h2>
+    <div class="ext-note">
+      現在の入力内容と計算結果に名前を付けて追加できます。ブラウザの localStorage に永続保存されます。
+      必要に応じて CSV／JSON に書出して別環境で読込むこともできます。
+    </div>
+    <div class="ext-buttons">
+      <label class="ext-label">ケース名
+        <input type="text" id="caseName" value="" placeholder="自動生成" class="ext-input-text">
+      </label>
+      <button type="button" class="ext-btn" onclick="addCurrentCase()">＋ 現在の内容を追加</button>
+      <button type="button" class="ext-btn" onclick="addCurrentColumnCase()" title="3.柱の断面算定の結果のみを個別ケースとして保存します（建物条件・壁量は表示されません）">＋ 柱断面のみ追加</button>
+      <button type="button" class="ext-btn" onclick="overwriteSelectedCase()" title="選択ケースを現在の入力・結果で上書き">↻ 選択を上書き</button>
+      <button type="button" class="ext-btn alt" onclick="loadSelectedCase()">選択を読込</button>
+      <button type="button" class="ext-btn alt" onclick="duplicateSelectedCase()">選択を複製</button>
+      <button type="button" class="ext-btn alt" onclick="moveSelectedCase(-1)" title="選択を上に移動">↑</button>
+      <button type="button" class="ext-btn alt" onclick="moveSelectedCase(1)"  title="選択を下に移動">↓</button>
+      <button type="button" class="ext-btn alt" onclick="deleteSelectedCase()">選択を削除</button>
+      <button type="button" class="ext-btn alt" onclick="clearAllCases()">全削除</button>
+    </div>
+    <div class="ext-buttons">
+      <button type="button" class="ext-btn" onclick="exportCasesCSV()">CSV で保存（入力＋結果）</button>
+      <label class="ext-btn alt ext-file-label">
+        CSV 読込
+        <input type="file" accept=".csv,text/csv" onchange="importCasesCSV(event)" style="display:none;">
+      </label>
+      <button type="button" class="ext-btn" onclick="exportCasesJSON()" title="入力・結果を完全保存 (推奨)">JSON で保存</button>
+      <label class="ext-btn alt ext-file-label">
+        JSON 読込
+        <input type="file" accept=".json,application/json" onchange="importCasesJSON(event)" style="display:none;">
+      </label>
+    </div>
+    <div class="ext-case-list">
+      <table class="ext-case-table" id="caseListTable">
+        <thead>
+          <tr>
+            <th style="width:30px;">選</th>
+            <th>No</th>
+            <th class="l">ケース名</th>
+            <th>種別</th>
+            <th>階数</th>
+            <th>1階 必要壁量<br>X / Y (cm)</th>
+            <th>2階 必要壁量<br>X / Y (cm)</th>
+            <th>柱判定</th>
+            <th>日時</th>
+          </tr>
+        </thead>
+        <tbody id="caseListBody"></tbody>
+      </table>
+    </div>
+  </section>
 
-  <button class="pdf-btn" onclick="genPDF()" id="btn-export">計算書PDF出力</button>
+  <!-- ====================================================== -->
+  <!-- 計算書出力                                            -->
+  <!-- ====================================================== -->
+  <section class="ext-section" id="reportSection">
+    <h2 class="ext-h2">計算書出力</h2>
+    <div class="ext-note">
+      出力する項目を選択して「計算書を生成」を押すと、新しいウィンドウに計算書が表示されます。ブラウザの印刷機能で PDF 保存や印刷ができます。
+    </div>
+    <div class="ext-radio-bar">
+      <b>出力対象:</b>
+      <label><input type="radio" name="rep_scope" value="current" checked> 現在の内容のみ</label>
+      <label><input type="radio" name="rep_scope" value="all"> 保存済みの全ケース</label>
+    </div>
+    <div class="ext-checkbox-grid">
+      <label><input type="checkbox" id="rep_cover" checked> 表紙・概要</label>
+      <label><input type="checkbox" id="rep_toc"   checked> 目次</label>
+      <label><input type="checkbox" id="rep_input" checked> 入力諸元</label>
+      <label><input type="checkbox" id="rep_wall"  checked> 必要壁量の算出</label>
+      <label><input type="checkbox" id="rep_wallcheck" checked> 壁量／バランス</label>
+      <label><input type="checkbox" id="rep_column" checked> 柱の断面算定</label>
+      <label><input type="checkbox" id="rep_calc_log"> 詳細計算ログ</label>
+      <label><input type="checkbox" id="rep_caseList"> 保存済みケース一覧</label>
+      <label><input type="checkbox" id="rep_formulas" checked> 使用式一覧</label>
+      <label><input type="checkbox" id="rep_logic"> 計算ロジック詳細解説</label>
+    </div>
+    <div class="ext-buttons">
+      <button type="button" class="ext-btn" onclick="generateReport()">計算書を生成</button>
+      <button type="button" class="ext-btn alt" onclick="toggleAllReportOptions(true)">全選択</button>
+      <button type="button" class="ext-btn alt" onclick="toggleAllReportOptions(false)">全解除</button>
+    </div>
+  </section>
+
+  <!-- ====================================================== -->
+  <!-- 計算結果出力 (CSV / Excel)                            -->
+  <!-- ====================================================== -->
+  <section class="ext-section" id="resultsExportSection">
+    <h2 class="ext-h2">計算結果出力</h2>
+    <div class="ext-note">
+      入力値と計算結果を表形式の CSV／Excel ファイルとして出力します（Excel で直接開けます）。
+    </div>
+    <div class="ext-radio-bar">
+      <b>出力対象:</b>
+      <label><input type="radio" name="res_scope" value="current" checked> 現在の内容のみ</label>
+      <label><input type="radio" name="res_scope" value="all"> 保存済みの全ケース</label>
+    </div>
+    <div class="ext-buttons">
+      <button type="button" class="ext-btn" onclick="exportResultsCSV()">CSV で出力 (簡易表)</button>
+      <button type="button" class="ext-btn" onclick="exportResultsXLSX()" title="設定値・計算結果・壁量表をシート別に出力">Excel (.xlsx) で出力 (シート別)</button>
+    </div>
+    <div class="ext-note ext-note-sub">
+      Excel 出力は ExcelJS ライブラリを使用します（オフライン環境ではインターネット接続が必要）。
+      複数ケース選択時は各ケースに「C1_設定値」「C1_計算結果」「C1_壁量表」「C1_詳細ログ」のように番号付きシートが出力されます。
+    </div>
+  </section>
+
+  <!-- ====================================================== -->
+  <!-- 計算ロジック 詳細解説                                 -->
+  <!-- ====================================================== -->
+  <section class="ext-section" id="logicSection">
+    <h2 class="ext-h2">計算ロジック 詳細解説</h2>
+    <details>
+      <summary>▼ 展開して詳細を読む</summary>
+      <div id="logicDoc" class="ext-logic-doc">
+        <h3>(1) 全体フロー</h3>
+        <p>
+          本プログラムは <b>令和 7 年 4 月 1 日施行の改正建築基準法（建築基準法施行令第 46 条・告示第 1100 号）</b>
+          に基づき、木造軸組工法住宅における <b>必要壁量</b> の算出、<b>壁量充足／四分割法バランス検討</b>、
+          <b>柱の小径（断面算定）</b> を一貫して計算します。地震力（C₀＝0.2 標準）と風圧力（一般 50 cm／㎡ または 強風 70 cm／㎡）の
+          いずれか大きい方を必要壁量として採用し、X／Y 方向ごとに存在壁量との比較で OK／NG を判定します。
+        </p>
+        <ul>
+          <li>§1 必要壁量の算出（地震力 × 風圧力 の包絡）</li>
+          <li>§2 壁量充足チェック（X／Y 方向別、1F／2F 別）</li>
+          <li>§3 四分割法バランス検討（壁率比 ≧ 0.5 で OK）</li>
+          <li>§4 柱の小径（長期軸力 × 座屈低減 Kd）</li>
+        </ul>
+
+        <h3>(2) 屋根・壁の重量算定（地震用 ΣW）</h3>
+        <p>屋根仕上げ・太陽光・天井断熱材・壁仕上げ・外壁断熱材・積雪荷重などの単位重量に、
+          建物形状（軒の出 × 屋根勾配 × 階高）から決まる係数を乗じて、各階の地震用重量 ΣW を求めます。</p>
+        <div class="ext-formula">
+          屋根面積倍率 = 投影比 × √(1 + (勾配/10)²) &nbsp; （投影比＝(6+2·軒の出)·(16.5+2·軒の出) / 99）<br>
+          屋根荷重 G<sub>r</sub> = (屋根材＋太陽光) × 屋根面積倍率 ＋ 天井断熱<br>
+          外壁標準荷重 = ROUNDUP[10] (壁材×純壁率) ＋ ROUNDUP[10] (断熱×純壁率) ＋ ROUNDUP[10] (窓 400×開口率 0.09)<br>
+          内壁標準荷重 = 200 × h / 2.8 &nbsp; (h: 階高 [m])<br>
+          積雪荷重 M<sub>s</sub> = 最深積雪 × 単位荷重 × 0.35（地震用） × 投影比<br>
+          ΣW₂ = (G<sub>r</sub>＋M<sub>s</sub>)·A₂ ＋ 0.5·壁₂·A₂&nbsp;,&nbsp;
+          ΣW₁ = G<sub>f</sub>·A₂ ＋ 0.5·(壁₂＋壁₁)·A ＋ G<sub>r</sub>·max(0, A₁−A₂)
+        </div>
+        <p>床荷重 G<sub>f</sub>（積載荷重）は用途で変わります（住宅 600／事務所 800／教室 1100／店舗 1300／集会場 2100／倉庫 3900 N／㎡）。
+          柱の長期検討では別途、用途別の <b>長期積載荷重</b>（住宅 1300／事務所 1800／教室 2100／店舗 2900／集会場 2900／倉庫 3900 N／㎡）を採用します。</p>
+
+        <h3>(3) 必要壁量（地震力）</h3>
+        <p>各階の地震力 Q を C₀（標準せん断力係数）・Z（地域係数）・A<sub>i</sub>（高さ方向分布）・性能等級係数 g<sub>f</sub> から求め、
+          倍率 1.96 (kN/m) で除して単位床面積あたりの必要壁量 L<sub>w</sub> を算定します。</p>
+        <div class="ext-formula">
+          A<sub>i2</sub> = 1 ＋ ((1/√α) − α) · 2T/(1＋3T)&nbsp; （α=ΣW₂/ΣW、T=0.03·H、H=階高合計）<br>
+          Q₂ = ΣW₂(kN) · Z · A<sub>i2</sub> · C₀ · g<sub>f</sub>&nbsp;,&nbsp;
+          Q₁ = (ΣW₁＋ΣW₂)(kN) · Z · 1.0 · C₀ · g<sub>f</sub><br>
+          L<sub>w</sub>(cm/㎡) = ⌈ (Q / 1.96) × 100 / 床面積 ⌉&nbsp; （切上）<br>
+          性能等級係数: 等級 1 → 1.00、等級 2 → 1.25、等級 3 → 1.50
+        </div>
+
+        <h3>(4) 必要壁量（風圧力）と決定値</h3>
+        <p>風圧力の必要壁量は <b>見付面積 × 風圧力係数 (cm／㎡)</b> です。係数は一般地で 50、強風地域で 70 を入力します。
+          見付面積は床面より 1.35 m 以上の部分の垂直投影面積を用います。</p>
+        <div class="ext-formula">
+          風圧 必要壁量 L<sub>w,wind</sub> = 見付面積(㎡) × 風圧係数(cm/㎡)<br>
+          地震 必要壁量(総量) = ⌈L<sub>w</sub>⌉ × 床面積<br>
+          決定値 = max( 地震必要壁量(総量), 風圧必要壁量 )&nbsp; （X／Y 方向別）
+        </div>
+
+        <h3>(5) 壁量充足チェックと四分割法</h3>
+        <p>各階の X／Y 方向で <b>存在壁量 = Σ(倍率 × 長さ × 数 × 100)</b> を求め、必要壁量と比較します。
+          四分割法では建物の両側 1/4 ゾーンについて、それぞれ壁量充足率（存在壁量 / 必要壁量）を計算し、両者の壁率比（小／大）が 0.5 以上であれば OK となります。</p>
+        <div class="ext-formula">
+          存在壁量(cm) = Σ 倍率 × 長さ(m) × 数量 × 100<br>
+          【総量判定】 存在壁量 ≥ 決定必要壁量 → OK<br>
+          【1/4 必要壁量】 = ⌈L<sub>w</sub>⌉ × 1/4 床面積<br>
+          【壁率比】 = min(充足率<sub>L</sub>, 充足率<sub>R</sub>) / max(充足率<sub>L</sub>, 充足率<sub>R</sub>)<br>
+          ① 両ゾーンの充足率 &gt; 1.0 → OK<br>
+          ② いずれかが 1.0 以下 → 壁率比 ≥ 0.5 で OK
+        </div>
+
+        <h3>(6) 柱の小径（断面算定）</h3>
+        <p>柱に作用する <b>長期負担荷重 W<sub>d</sub></b>（屋根 ＋ 積雪 ＋ 上下階壁 ＋ 床）を負担面積 A<sub>e</sub> に乗じて発生軸力 N を求め、
+          有効細長比 λ から座屈係数 K<sub>d</sub> を計算し、長期許容応力度 f<sub>k</sub> による許容耐力 N<sub>a</sub> と比較して検定します。</p>
+        <div class="ext-formula">
+          1F 柱: W<sub>d</sub> = G<sub>r</sub>＋M<sub>s</sub> ＋ 上階壁 ＋ 床(長期) ＋ 0.5·1階壁<br>
+          2F 柱: W<sub>d</sub> = G<sub>r</sub>＋M<sub>s</sub> ＋ 0.5·2階壁<br>
+          発生軸力 N = W<sub>d</sub>(N/㎡) × A<sub>e</sub>(㎡)<br>
+          座屈長 l<sub>k</sub> = h(mm) − ( 1階: 120, 2階: 105 )<br>
+          λ = l<sub>k</sub> / i&nbsp;,&nbsp; i = 短辺 / √12&nbsp; （矩形断面）<br>
+          K<sub>d</sub>:&nbsp; λ ≤ 30 → 1.0&nbsp;,&nbsp; 30 &lt; λ ≤ 100 → 1.3 − 0.01·λ&nbsp;,&nbsp; λ &gt; 100 → 3000/λ²<br>
+          f<sub>k</sub> = (1.1·F<sub>c</sub>) / 3 × K<sub>d</sub>&nbsp; [N/㎟]<br>
+          N<sub>a</sub> = f<sub>k</sub> × 短辺 × 長辺&nbsp; [N]&nbsp; ， 検定: N ≤ N<sub>a</sub> かつ λ ≤ 150 で OK
+        </div>
+
+        <h3>(7) 参考文献</h3>
+        <ol class="ext-ref-list">
+          <li><b>建築基準法施行令</b>第 46 条／<b>国土交通省告示</b>第 1100 号「壁の倍率を定める件」（令和 7 年 4 月 1 日施行）。</li>
+          <li><b>国土交通省告示</b>第 1352 号「四分割法・壁率比による配置バランス検討」。</li>
+          <li><b>国土交通省告示</b>第 1024 号「木材の許容応力度・許容支圧応力度の数値を定める件」（基準強度 F<sub>c</sub>）。</li>
+          <li><b>(公財) 日本住宅・木材技術センター</b>：<i>「壁量等の基準（令和 7 年施行）設計支援ツール」</i> 解説資料。</li>
+        </ol>
+        <p class="ext-note-sub">本プログラムの計算式は上記参考文献に準拠していますが、実際の構造設計においては有資格者による技術判断が必要です。</p>
+      </div>
+    </details>
+  </section>
 </div>
 
 <div id="specModal" class="modal-overlay" onclick="WallCheck.closeModal(event)">
@@ -712,173 +1007,6 @@ window.switchTab = function(id, btnElement) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   if(btnElement) btnElement.classList.add('active');
   if(id === 'wallcheck' && window.WallCheck) WallCheck.syncFromCalc();
-};
-
-/* ===== PDF ===== */
-function genPDF() {
-  if (typeof html2pdf === 'undefined') { alert("PDF生成ライブラリなし"); return; }
-  const c = document.getElementById('main-container');
-  const b = document.getElementById('btn-export');
-
-  const sections = [
-    { key: 'wall', el: document.getElementById('wall'), chk: document.getElementById('pdf_out_wall') },
-    { key: 'wallcheck', el: document.getElementById('wallcheck'), chk: document.getElementById('pdf_out_wallcheck') },
-    { key: 'column', el: document.getElementById('column'), chk: document.getElementById('pdf_out_column') },
-    { key: 'log', el: document.getElementById('calc_log'), chk: document.getElementById('pdf_out_log') }
-  ];
-
-  const enabled = sections.filter(s => s.el && s.chk && s.chk.checked);
-  if (enabled.length === 0) { alert('PDF出力項目を1つ以上選択してください'); return; }
-
-  // PDF用に表示/改ページをセット（後で必ず戻す）
-  sections.forEach(s => {
-    if (!s.el) return;
-    s.el.classList.remove('pdf-hide');
-    s.el.classList.remove('pdf-page-break');
-  });
-
-  enabled.forEach((s, idx) => {
-    if (!s.el) return;
-    if (idx > 0) s.el.classList.add('pdf-page-break');
-  });
-
-  sections.forEach(s => {
-    if (!s.el || !s.chk) return;
-    if (!s.chk.checked) s.el.classList.add('pdf-hide');
-  });
-
-  document.body.classList.add('pdf-mode');
-  b.textContent = "生成中...";
-  html2pdf()
-    .set({
-      margin: 8,
-      filename: 'calc.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: Math.max(document.documentElement.scrollWidth, c.scrollWidth)
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: {
-        mode: ['css'],
-        before: '.pdf-page-break'
-      }
-    })
-    .from(c)
-    .save()
-    .then(() => {
-      document.body.classList.remove('pdf-mode');
-      b.textContent = "計算書PDF出力";
-      // 表示/改ページを元に戻す
-      sections.forEach(s => {
-        if (!s.el) return;
-        s.el.classList.remove('pdf-hide');
-        s.el.classList.remove('pdf-page-break');
-      });
-    })
-    .catch(e => {
-      console.error(e);
-      document.body.classList.remove('pdf-mode');
-      b.textContent = "計算書PDF出力";
-      sections.forEach(s => {
-        if (!s.el) return;
-        s.el.classList.remove('pdf-hide');
-        s.el.classList.remove('pdf-page-break');
-      });
-    });
-}
-
-/* ===== Data Manager (Pro Version - Fixed for X/Y) ===== */
-/* ===== Data Manager (Pro Version - Fixed for X/Y) ===== */
-const DataMgr = {
-  collect() {
-    const inputs = {};
-    document.querySelectorAll('input:not(.wc_rowname):not(.wc_ratio):not(.wc_len):not(.wc_count):not([class^="n-"]), select:not(.n-floor-sel):not(.n-pos-sel)').forEach(el => {
-       if(el.id) inputs[el.id] = el.value;
-    });
-
-    const tables = { x_1f:[], y_1f:[], x_2f:[], y_2f:[] };
-    ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
-       const tb = document.getElementById(`wc_table_${k}`);
-       if(tb) {
-         tb.querySelectorAll('tbody tr').forEach(tr => {
-           tables[k].push({
-             name: tr.querySelector('.wc_rowname').value,
-             spec: tr.querySelector('.wc_name').value,
-             ratio: tr.querySelector('.wc_ratio').value,
-             len: tr.querySelector('.wc_len').value,
-             count: tr.querySelector('.wc_count').value
-           });
-         });
-       }
-    });
-
-    const n_rows = [];
-    // N値計算テーブルが存在する場合のみ収集（エラー回避）
-    const nTable = document.getElementById('n_table');
-    if (nTable) {
-        nTable.querySelectorAll('tbody tr').forEach(tr => {
-           n_rows.push({
-              name: tr.querySelector('input[type=text]').value,
-              floor: tr.querySelector('.n-floor-sel').value,
-              pos: tr.querySelector('.n-pos-sel').value,
-              ux1: tr.querySelector('.n-ux1').value, ux2: tr.querySelector('.n-ux2').value,
-              uy1: tr.querySelector('.n-uy1').value, uy2: tr.querySelector('.n-uy2').value,
-              lx1: tr.querySelector('.n-lx1').value, lx2: tr.querySelector('.n-lx2').value,
-              ly1: tr.querySelector('.n-ly1').value, ly2: tr.querySelector('.n-ly2').value
-           });
-        });
-    }
-    return { inputs, tables, n_rows };
-  },
-  apply(data) {
-    if(!data) return;
-    if(data.inputs) {
-      Object.keys(data.inputs).forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.value = data.inputs[id];
-      });
-    }
-    if(data.tables) {
-       ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
-         const tb = document.getElementById(`wc_table_${k}`);
-         if(tb) {
-             const tbody = tb.getElementsByTagName('tbody')[0];
-             tbody.innerHTML = '';
-             if(data.tables[k]) data.tables[k].forEach(r => WallCheck.addRow(k.split('_')[0], k.split('_')[1], r));
-         }
-       });
-    }
-    
-    // N値計算テーブルとNCalcが存在する場合のみ適用（エラー回避）
-    const nTable = document.getElementById('n_table');
-    if(nTable && typeof NCalc !== 'undefined') {
-      const n_tb = nTable.getElementsByTagName('tbody')[0];
-      n_tb.innerHTML = '';
-      if(data.n_rows) {
-        data.n_rows.forEach(r => NCalc.addRow(r));
-      } else {
-        NCalc.addRow(); 
-      }
-    }
-
-    if(typeof Mat !== 'undefined') Mat.init();
-    UI.update(); Calc.exec(); 
-    if(typeof WallCheck !== 'undefined' && WallCheck.initDone) WallCheck.syncFromCalc();
-  },
-  saveToBrowser() { localStorage.setItem('ark_calc_v5', JSON.stringify(this.collect())); alert('保存しました'); },
-  loadFromBrowser() { const d=localStorage.getItem('ark_calc_v5'); if(d){this.apply(JSON.parse(d));alert('読込完了');}else{alert('データなし');} },
-  exportJSON() {
-    const b = new Blob([JSON.stringify(this.collect(),null,2)],{type:'application/json'});
-    const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='calc_data.json'; a.click();
-  },
-  importJSON(input) {
-    const f=input.files[0]; if(!f)return;
-    const r=new FileReader(); r.onload=e=>{try{this.apply(JSON.parse(e.target.result));alert('読込完了');}catch(x){alert('Error: ' + x);}}; r.readAsText(f);
-  }
 };
 
 /* ===== Logic Modules ===== */
@@ -1970,7 +2098,1296 @@ window.onload = function(){
 
   Calc.exec();
   WallCheck.syncFromCalc();
+
+  // データ管理 初期化
+  _loadCasesFromStorage();
+  renderCaseList();
+  autoFillCaseName();
 };
+
+/* ============================================================
+ *  データ管理（複数ケース保存・読込）
+ *  計算書出力／計算結果出力（CSV／Excel）
+ * ============================================================ */
+
+/* ===== 入力ID 一覧（ケース保存対象、scalar 入力） ===== */
+const ALL_INPUT_IDS = [
+  'caseName',
+  // 必要壁量
+  'stories','usage','grade','z_val','c0',
+  'floor_dead','floor_live','h2','h1','roof_h','area2','area1',
+  'mat_roof','mat_solar','solar_mass','mat_wall',
+  'insul_ceiling','insul_ceiling_density','insul_ceiling_thick',
+  'insul_wall','insul_wall_density1','insul_wall_thick1','insul_wall_density2','insul_wall_thick2',
+  'is_heavy_snow','val_snow_d','val_snow_w',
+  'kobai','noki',
+  // 風圧／四分割 切替
+  'chk_wind_check','wind_coeff','wind_aw_x1','wind_aw_y1','wind_aw_x2','wind_aw_y2',
+  'chk_4div_check',
+  // 四分割 1/4床面積
+  'wc_4area_x_1f_t','wc_4area_x_1f_b','wc_4area_y_1f_l','wc_4area_y_1f_r',
+  'wc_4area_x_2f_t','wc_4area_x_2f_b','wc_4area_y_2f_l','wc_4area_y_2f_r',
+  // 柱
+  'col_floor','col_pos','col_ae','col_w_min','col_w_max',
+  'mat_cat','mat_spec','mat_grade'
+];
+
+/* ===== 状態取得／適用 ===== */
+function _collectWallTables() {
+  const tables = { x_1f:[], y_1f:[], x_2f:[], y_2f:[] };
+  ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
+    const tb = document.getElementById('wc_table_'+k);
+    if (!tb) return;
+    tb.querySelectorAll('tbody tr').forEach(tr => {
+      tables[k].push({
+        rowId: tr.dataset.rowId || '',
+        name: tr.querySelector('.wc_rowname').value,
+        spec: tr.querySelector('.wc_name').value,
+        ratio: tr.querySelector('.wc_ratio').value,
+        len: tr.querySelector('.wc_len').value,
+        count: tr.querySelector('.wc_count').value
+      });
+    });
+  });
+  return tables;
+}
+function _applyWallTables(tables) {
+  if (!tables) return;
+  ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
+    const tb = document.getElementById('wc_table_'+k);
+    if (!tb) return;
+    const tbody = tb.getElementsByTagName('tbody')[0];
+    tbody.innerHTML = '';
+    if (tables[k]) {
+      const ax = k.split('_')[0];
+      const fl = k.split('_')[1];
+      tables[k].forEach(r => WallCheck.addRow(ax, fl, r));
+    }
+  });
+}
+
+function collectCurrentState() {
+  const st = {};
+  for (const id of ALL_INPUT_IDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (el.type === 'checkbox') st[id] = el.checked ? 1 : 0;
+    else st[id] = el.value;
+  }
+  st._wallTables = _collectWallTables();
+  // 四分割 選択状態 (壁量の数値で保持)
+  if (typeof WallCheck !== 'undefined' && WallCheck.selected4Div) {
+    // rowId をキーにしているので、テーブル再構築後に再選択するためにテーブル行内 index で代替保存
+    const sel = {};
+    Object.keys(WallCheck.selected4Div).forEach(zone => {
+      // zone = "x_1f_t" 等
+      const ax = zone[0]; const fl = zone.slice(2,4); // "1f"|"2f"
+      const tbl = (st._wallTables[ax+'_'+fl]) || [];
+      const idxList = [];
+      Object.keys(WallCheck.selected4Div[zone]).forEach(rowId => {
+        const idx = tbl.findIndex(r => r.rowId === rowId);
+        if (idx >= 0) idxList.push(idx);
+      });
+      sel[zone] = idxList;
+    });
+    st._4divSel = sel;
+  }
+  return st;
+}
+
+function applyState(st) {
+  if (!st) return;
+  window._isApplyingState = true;
+  try {
+    for (const id of ALL_INPUT_IDS) {
+      if (!(id in st)) continue;
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if (el.type === 'checkbox') el.checked = !!parseInt(st[id]);
+      else el.value = st[id];
+    }
+    // 階数依存の表示
+    if (typeof Mat !== 'undefined') Mat.init();
+    UI.update();
+    UI.toggle('snow'); UI.toggle('solar'); UI.toggle('insul_ceiling'); UI.toggle('insul_wall');
+    // 風圧／四分割 のパネル切替（チェックボックス連動）
+    if (typeof WallCheck !== 'undefined' && WallCheck.toggleWind) {
+      WallCheck.toggleWind();
+      WallCheck.toggle4Div();
+    }
+    // 壁量行
+    if (st._wallTables) _applyWallTables(st._wallTables);
+    // 四分割選択 復元
+    if (typeof WallCheck !== 'undefined' && WallCheck.selected4Div) {
+      Object.keys(WallCheck.selected4Div).forEach(z => WallCheck.selected4Div[z] = {});
+      if (st._4divSel) {
+        Object.keys(st._4divSel).forEach(zone => {
+          const ax = zone[0]; const fl = zone.slice(2,4);
+          const tb = document.getElementById('wc_table_'+ax+'_'+fl);
+          if (!tb) return;
+          const rows = tb.querySelectorAll('tbody tr');
+          (st._4divSel[zone]||[]).forEach(idx => {
+            if (rows[idx]) {
+              const rowId = rows[idx].dataset.rowId;
+              const wallVal = parseFloat(rows[idx].querySelector('.wc_val').value) || 0;
+              WallCheck.selected4Div[zone][rowId] = wallVal;
+            }
+          });
+        });
+      }
+    }
+    Calc.exec();
+    if (typeof WallCheck !== 'undefined' && WallCheck.initDone) WallCheck.syncFromCalc();
+  } finally {
+    window._isApplyingState = false;
+  }
+}
+
+function autoFillCaseName() {
+  const el = document.getElementById('caseName');
+  if (!el || el.value) return;
+  const dt = new Date();
+  const m = ('0'+(dt.getMonth()+1)).slice(-2);
+  const d = ('0'+dt.getDate()).slice(-2);
+  const h = ('0'+dt.getHours()).slice(-2);
+  const min = ('0'+dt.getMinutes()).slice(-2);
+  const stories = (document.getElementById('stories')||{}).value === '1' ? '平屋' : '2階建';
+  el.value = m+d+'-'+h+min+' '+stories;
+}
+
+function _genCaseId() { return 'c'+Date.now()+'_'+Math.floor(Math.random()*1000); }
+
+function collectCurrentResults() {
+  const r = Calc.results || {};
+  const stories = parseInt((document.getElementById('stories')||{}).value) || 1;
+  const num = (x, d) => (typeof x === 'number' && isFinite(x)) ? +x.toFixed(d||3) : '';
+  // 柱判定
+  const colJudge = (document.getElementById('col_judge')||{}).textContent || '';
+  const colMsg   = (document.getElementById('col_msg')  ||{}).textContent || '';
+  // 壁量 OK/NG (1F/2F × X/Y)
+  const wcj = id => (document.getElementById(id)||{}).textContent || '';
+  const allOK = (wcj('wc_judge_x_1f')==='OK') && (wcj('wc_judge_y_1f')==='OK')
+              && (stories===1 || (wcj('wc_judge_x_2f')==='OK' && wcj('wc_judge_y_2f')==='OK'));
+  return {
+    stories,
+    req_1x: r.req_1x || 0,
+    req_1y: r.req_1y || 0,
+    req_2x: r.req_2x || 0,
+    req_2y: r.req_2y || 0,
+    lw1:    r.lw1 || 0,
+    lw2:    r.lw2 || 0,
+    W1_kN:  num(r.W1, 2),
+    W2_kN:  num(r.W2, 2),
+    Ai2:    num(r.Ai2, 3),
+    exist_x_1f: parseFloat((document.getElementById('wc_exist_x_1f')||{}).textContent) || 0,
+    exist_y_1f: parseFloat((document.getElementById('wc_exist_y_1f')||{}).textContent) || 0,
+    exist_x_2f: parseFloat((document.getElementById('wc_exist_x_2f')||{}).textContent) || 0,
+    exist_y_2f: parseFloat((document.getElementById('wc_exist_y_2f')||{}).textContent) || 0,
+    judge_x_1f: wcj('wc_judge_x_1f'),
+    judge_y_1f: wcj('wc_judge_y_1f'),
+    judge_x_2f: wcj('wc_judge_x_2f'),
+    judge_y_2f: wcj('wc_judge_y_2f'),
+    col_judge: colJudge,
+    col_msg:   colMsg,
+    Fc:        parseFloat((document.getElementById('disp_fc')||{}).textContent) || 0,
+    fk:        parseFloat((document.getElementById('chk_fk')||{}).textContent) || 0,
+    N_act:     parseFloat((document.getElementById('chk_n_act')||{}).textContent) || 0,
+    N_allow:   parseFloat((document.getElementById('chk_n_allow')||{}).textContent) || 0,
+    lambda:    parseFloat((document.getElementById('chk_lambda')||{}).textContent) || 0,
+    _ok:       allOK && (colJudge === 'OK')
+  };
+}
+
+const LS_KEY = 'mokuzoWallVolume_savedCases';
+let savedCases = [];
+
+function _saveCasesToStorage() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(savedCases)); } catch(e){}
+}
+function _loadCasesFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) savedCases = arr;
+    }
+  } catch(e){}
+}
+
+function addCurrentCase() {
+  try { Calc.exec(); WallCheck.syncFromCalc(); } catch(e){}
+  const nameEl = document.getElementById('caseName');
+  const name = (nameEl && nameEl.value.trim()) || ('ケース'+(savedCases.length+1));
+  const state = collectCurrentState();
+  const results = collectCurrentResults();
+  const dt = new Date().toLocaleString('ja-JP');
+  savedCases.push({ id:_genCaseId(), name, caseType:'full', ts: Date.now(), createdAt:dt, state, results });
+  _saveCasesToStorage();
+  renderCaseList();
+  if (nameEl) nameEl.value = '';
+  autoFillCaseName();
+}
+
+/* 柱の断面算定 結果のみを個別ケースとして保存
+ *   - 建物条件・壁量に関する情報は保存対象外（柱関連入力＋結果のみ）
+ *   - case.caseType = 'column' とマークし、一覧／計算書／Excel で柱項目のみ扱う
+ */
+function addCurrentColumnCase() {
+  try { Calc.exec(); } catch(e){}
+  const nameEl = document.getElementById('caseName');
+  const baseName = (nameEl && nameEl.value.trim()) || ('柱断面'+(savedCases.length+1));
+  // 末尾に [柱断面] 表記がない場合は付加
+  const name = /\[柱断面/.test(baseName) ? baseName : (baseName + ' [柱断面]');
+  const fullState = collectCurrentState();
+  // 柱断面に関係する入力IDのみ抽出（建物条件・壁量は除外）
+  const colIds = new Set([
+    'col_floor','col_pos','col_ae','col_w_min','col_w_max',
+    'mat_cat','mat_spec','mat_grade',
+    // 柱算定にも一部建物情報が必要なため最低限のものを保持
+    'stories','h2','h1','floor_dead','usage'
+  ]);
+  const colState = {};
+  Object.keys(fullState).forEach(k => {
+    if (colIds.has(k) || k.startsWith('_')) {
+      // _wallTables, _4divSel は柱断面と無関係なので除外
+      if (k === '_wallTables' || k === '_4divSel') return;
+      colState[k] = fullState[k];
+    }
+  });
+  const fullResults = collectCurrentResults();
+  // 柱断面の結果のみ
+  const colResults = {
+    stories:    fullResults.stories,
+    Fc:         fullResults.Fc,
+    fk:         fullResults.fk,
+    N_act:      fullResults.N_act,
+    N_allow:    fullResults.N_allow,
+    lambda:     fullResults.lambda,
+    col_judge:  fullResults.col_judge,
+    col_msg:    fullResults.col_msg,
+    _ok:        (fullResults.col_judge === 'OK')
+  };
+  const dt = new Date().toLocaleString('ja-JP');
+  savedCases.push({ id:_genCaseId(), name, caseType:'column', ts: Date.now(), createdAt:dt, state: colState, results: colResults });
+  _saveCasesToStorage();
+  renderCaseList();
+  if (nameEl) nameEl.value = '';
+  autoFillCaseName();
+}
+
+function overwriteSelectedCase() {
+  const id = getSelectedCaseId();
+  if (!id) { alert('上書き先のケースを選択してください'); return; }
+  const idx = savedCases.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  if (!confirm('「'+savedCases[idx].name+'」を現在の内容で上書きしますか？')) return;
+  try { Calc.exec(); WallCheck.syncFromCalc(); } catch(e){}
+  const nameEl = document.getElementById('caseName');
+  const newName = (nameEl && nameEl.value.trim()) || savedCases[idx].name;
+  savedCases[idx].name = newName;
+  // 柱断面ケースは柱関連のみ更新、他は全項目更新
+  if (savedCases[idx].caseType === 'column') {
+    const fullState = collectCurrentState();
+    const colIds = new Set(['col_floor','col_pos','col_ae','col_w_min','col_w_max',
+      'mat_cat','mat_spec','mat_grade','stories','h2','h1','floor_dead','usage']);
+    const colState = {};
+    Object.keys(fullState).forEach(k => {
+      if (colIds.has(k) || (k.startsWith('_') && k !== '_wallTables' && k !== '_4divSel')) colState[k] = fullState[k];
+    });
+    const fullR = collectCurrentResults();
+    savedCases[idx].state = colState;
+    savedCases[idx].results = {
+      stories: fullR.stories, Fc: fullR.Fc, fk: fullR.fk,
+      N_act: fullR.N_act, N_allow: fullR.N_allow, lambda: fullR.lambda,
+      col_judge: fullR.col_judge, col_msg: fullR.col_msg,
+      _ok: (fullR.col_judge === 'OK')
+    };
+  } else {
+    savedCases[idx].state = collectCurrentState();
+    savedCases[idx].results = collectCurrentResults();
+  }
+  savedCases[idx].ts = Date.now();
+  savedCases[idx].createdAt = new Date().toLocaleString('ja-JP') + ' (更新)';
+  _saveCasesToStorage();
+  renderCaseList();
+}
+
+function duplicateSelectedCase() {
+  const id = getSelectedCaseId();
+  if (!id) { alert('複製元のケースを選択してください'); return; }
+  const idx = savedCases.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const dup = JSON.parse(JSON.stringify(savedCases[idx]));
+  dup.id = _genCaseId();
+  dup.name = (savedCases[idx].name||'') + ' (複製)';
+  dup.ts = Date.now();
+  dup.createdAt = new Date().toLocaleString('ja-JP');
+  savedCases.splice(idx+1, 0, dup);
+  _saveCasesToStorage();
+  renderCaseList();
+}
+
+function moveSelectedCase(dir) {
+  const id = getSelectedCaseId();
+  if (!id) { alert('移動するケースを選択してください'); return; }
+  const idx = savedCases.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const ni = idx + (dir < 0 ? -1 : 1);
+  if (ni < 0 || ni >= savedCases.length) return;
+  const tmp = savedCases[idx]; savedCases[idx] = savedCases[ni]; savedCases[ni] = tmp;
+  _saveCasesToStorage();
+  renderCaseList();
+  setTimeout(() => {
+    const r = document.querySelector('input[name="caseSel"][value="'+id+'"]');
+    if (r) r.checked = true;
+  }, 0);
+}
+
+function getSelectedCaseId() {
+  const r = document.querySelector('input[name="caseSel"]:checked');
+  return r ? r.value : null;
+}
+
+function loadSelectedCase() {
+  const id = getSelectedCaseId();
+  if (!id) { alert('ケースを選択してください'); return; }
+  const c = savedCases.find(x => x.id === id);
+  if (!c) return;
+  applyState(c.state);
+  const nameEl = document.getElementById('caseName');
+  if (nameEl) nameEl.value = c.name || '';
+  // 柱断面ケースを読込んだ場合、柱の断面算定タブに切り替える
+  if (c.caseType === 'column') {
+    const colTabBtn = document.querySelector('.tab-btn[onclick*="column"]');
+    if (colTabBtn && typeof switchTab === 'function') switchTab('column', colTabBtn);
+  }
+}
+
+function deleteSelectedCase() {
+  const id = getSelectedCaseId();
+  if (!id) { alert('ケースを選択してください'); return; }
+  const idx = savedCases.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  if (!confirm('「'+savedCases[idx].name+'」を削除しますか？')) return;
+  savedCases.splice(idx, 1);
+  _saveCasesToStorage();
+  renderCaseList();
+}
+
+function clearAllCases() {
+  if (!savedCases.length) { alert('保存ケースはありません'); return; }
+  if (!confirm('すべての保存ケース ('+savedCases.length+'件) を削除しますか？')) return;
+  savedCases = [];
+  _saveCasesToStorage();
+  renderCaseList();
+}
+
+function renderCaseList() {
+  const tb = document.getElementById('caseListBody');
+  if (!tb) return;
+  if (savedCases.length === 0) {
+    tb.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#888; padding:8px;">（ケースなし）</td></tr>';
+    return;
+  }
+  tb.innerHTML = savedCases.map((c, i) => {
+    const r = c.results || {};
+    const fmt = v => (v===0||v==null||v==='') ? '-' : (typeof v==='number' ? Math.ceil(v) : v);
+    const colJud = (r.col_judge === 'OK') ? '<span class="res-ok">OK</span>'
+                  : (r.col_judge === 'NG') ? '<span class="res-ng">NG</span>'
+                  : '-';
+    const isCol = (c.caseType === 'column');
+    const typeLbl = isCol
+      ? '<span style="background:#3498db;color:#fff;padding:2px 6px;border-radius:3px;font-size:0.72rem;">柱断面のみ</span>'
+      : '<span style="background:#7f8c8d;color:#fff;padding:2px 6px;border-radius:3px;font-size:0.72rem;">全項目</span>';
+    let stStr, w1, w2;
+    if (isCol) {
+      // 柱断面のみ: 階数・壁量列はダッシュ
+      stStr = '-';
+      w1 = '-';
+      w2 = '-';
+    } else {
+      stStr = (r.stories===2) ? '2階建' : '平屋';
+      w1 = fmt(r.req_1x)+' / '+fmt(r.req_1y);
+      w2 = (r.stories===2) ? (fmt(r.req_2x)+' / '+fmt(r.req_2y)) : '-';
+    }
+    return '<tr>' +
+      '<td><input type="radio" name="caseSel" value="'+_escHtml(c.id)+'"'+(i===0?' checked':'')+'></td>' +
+      '<td>'+(i+1)+'</td>' +
+      '<td class="l">'+_escHtml(c.name||'')+'</td>' +
+      '<td>'+typeLbl+'</td>' +
+      '<td>'+stStr+'</td>' +
+      '<td>'+w1+'</td>' +
+      '<td>'+w2+'</td>' +
+      '<td>'+colJud+'</td>' +
+      '<td style="font-size:0.78rem;">'+_escHtml(c.createdAt||'')+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function _escHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, ch =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch]);
+}
+
+/* ===== CSV / JSON 入出力 ===== */
+function _csvEsc(v){
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n]/.test(s)) return '"'+s.replace(/"/g, '""')+'"';
+  return s;
+}
+function _parseCSV(text){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.split(/\r?\n/).filter(l => l.length);
+  const out = [];
+  for (const line of lines) {
+    const row=[]; let cur=''; let inQ=false;
+    for (let i=0;i<line.length;i++){
+      const ch=line[i];
+      if (inQ){
+        if (ch==='"'){ if (line[i+1]==='"'){ cur+='"'; i++; } else inQ=false; }
+        else cur+=ch;
+      } else {
+        if (ch===','){ row.push(cur); cur=''; }
+        else if (ch==='"') inQ=true;
+        else cur+=ch;
+      }
+    }
+    row.push(cur);
+    out.push(row);
+  }
+  return out;
+}
+function _downloadBlob(content, mime, filename){
+  const blob = new Blob([content], { type: mime+';charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportCasesCSV() {
+  if (!savedCases.length) { alert('保存ケースはありません'); return; }
+  // state は JSON 文字列化して 1 セルに格納（壁量行データを含む複雑な構造のため）
+  const headers = ['__schema','name','caseType','timestamp','createdAt','state_json','results_json'];
+  let csv = '﻿' + headers.map(_csvEsc).join(',') + '\n';
+  for (const c of savedCases) {
+    const row = ['v2', c.name||'', c.caseType||'full', c.ts||0, c.createdAt||'',
+                 JSON.stringify(c.state||{}), JSON.stringify(c.results||{})];
+    csv += row.map(_csvEsc).join(',') + '\n';
+  }
+  _downloadBlob(csv, 'text/csv', 'wallvolume_cases.csv');
+}
+function importCasesCSV(ev) {
+  const file = ev.target.files && ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const rows = _parseCSV(e.target.result);
+      if (!rows.length) { alert('CSV が空です'); return; }
+      const header = rows[0];
+      const idxN = header.indexOf('name');
+      const idxTy = header.indexOf('caseType');
+      const idxT = header.indexOf('timestamp');
+      const idxC = header.indexOf('createdAt');
+      const idxS = header.indexOf('state_json');
+      const idxR = header.indexOf('results_json');
+      if (idxN<0 || idxS<0) { alert('CSV ヘッダーに name, state_json 列が必要です'); return; }
+      const newCases = [];
+      for (let li=1; li<rows.length; li++){
+        const cols = rows[li];
+        if (cols.every(x => !x)) continue;
+        const c = {
+          id: _genCaseId(),
+          name: cols[idxN],
+          caseType: (idxTy >= 0 ? (cols[idxTy] || 'full') : 'full'),
+          ts: +cols[idxT] || Date.now(),
+          createdAt: cols[idxC] || new Date().toLocaleString('ja-JP'),
+          state:   {}, results: {}
+        };
+        try { c.state   = JSON.parse(cols[idxS]||'{}'); } catch(e){ c.state={}; }
+        try { c.results = JSON.parse(cols[idxR]||'{}'); } catch(e){ c.results={}; }
+        newCases.push(c);
+      }
+      if (!newCases.length) { alert('CSV にケースが見つかりませんでした'); return; }
+      const append = savedCases.length ? confirm('既存ケース ('+savedCases.length+'件) に追加しますか？\n「キャンセル」で置き換え') : true;
+      savedCases = append ? savedCases.concat(newCases) : newCases;
+      _saveCasesToStorage(); renderCaseList();
+      alert(newCases.length+' 件読み込みました');
+    } catch (ex){ alert('CSV 読込エラー: ' + ex.message); }
+    ev.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+function exportCasesJSON() {
+  if (!savedCases.length) { alert('保存ケースはありません'); return; }
+  const payload = {
+    __schema: 'mokuzoWallVolume_v1',
+    exportedAt: new Date().toISOString(),
+    appName: '木造軸組み工法用壁量・バランス・柱の断面算定プログラム',
+    count: savedCases.length,
+    cases: savedCases
+  };
+  _downloadBlob(JSON.stringify(payload, null, 2), 'application/json', 'wallvolume_cases.json');
+}
+function importCasesJSON(ev) {
+  const file = ev.target.files && ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const obj = JSON.parse(e.target.result);
+      let arr = null;
+      if (Array.isArray(obj)) arr = obj;
+      else if (obj && Array.isArray(obj.cases)) arr = obj.cases;
+      if (!arr || !arr.length) { alert('JSON にケースが見つかりませんでした'); return; }
+      const newCases = arr.map(c => ({
+        id: _genCaseId(),
+        name: c.name || '(無題)',
+        caseType: c.caseType || 'full',
+        ts: c.ts || Date.now(),
+        createdAt: c.createdAt || new Date().toLocaleString('ja-JP'),
+        state: c.state || {},
+        results: c.results || {}
+      }));
+      const append = savedCases.length ? confirm('既存ケース ('+savedCases.length+'件) に追加しますか？\n「キャンセル」で置き換え') : true;
+      savedCases = append ? savedCases.concat(newCases) : newCases;
+      _saveCasesToStorage(); renderCaseList();
+      alert(newCases.length+' 件読み込みました');
+    } catch (ex){ alert('JSON 読込エラー: ' + ex.message); }
+    ev.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* ===== 計算結果 CSV/Excel 出力 ===== */
+function exportResultsCSV() {
+  const scope = (document.querySelector('input[name="res_scope"]:checked')||{}).value || 'current';
+  const rows = [['ケース名','種別','階数','1F 必要壁量(X)','1F 必要壁量(Y)','2F 必要壁量(X)','2F 必要壁量(Y)','1F 存在壁量(X)','1F 存在壁量(Y)','2F 存在壁量(X)','2F 存在壁量(Y)','壁量判定 X1F','Y1F','X2F','Y2F','Fc','fk','λ','N発生(kN)','N許容(kN)','柱判定','柱メッセージ']];
+  let list = [];
+  if (scope === 'all' && savedCases.length) list = savedCases.slice();
+  else list = [{ name:'(現在の入力)', caseType:'full', state:collectCurrentState(), results:collectCurrentResults() }];
+  for (const c of list) {
+    const r = c.results || {};
+    const isCol = (c.caseType === 'column');
+    rows.push([
+      c.name||'',
+      isCol ? '柱断面のみ' : '全項目',
+      isCol ? '-' : (r.stories===2?'2階建':'平屋'),
+      isCol?'-':(r.req_1x||''), isCol?'-':(r.req_1y||''), isCol?'-':(r.req_2x||''), isCol?'-':(r.req_2y||''),
+      isCol?'-':(r.exist_x_1f||''), isCol?'-':(r.exist_y_1f||''), isCol?'-':(r.exist_x_2f||''), isCol?'-':(r.exist_y_2f||''),
+      isCol?'-':(r.judge_x_1f||''), isCol?'-':(r.judge_y_1f||''), isCol?'-':(r.judge_x_2f||''), isCol?'-':(r.judge_y_2f||''),
+      r.Fc||'', r.fk||'', r.lambda||'', r.N_act||'', r.N_allow||'',
+      r.col_judge||'', r.col_msg||''
+    ]);
+  }
+  const csv = '﻿' + rows.map(r => r.map(_csvEsc).join(',')).join('\n');
+  _downloadBlob(csv, 'text/csv', 'wallvolume_results.csv');
+}
+
+function _safeSheetName(n){
+  let s = String(n||'').replace(/[\\\/\?\*\[\]:]/g,'_');
+  if (s.length > 31) s = s.substring(0,31);
+  return s || 'Sheet';
+}
+function _ymdhm(){
+  const d = new Date();
+  return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2)
+       + '_' + ('0'+d.getHours()).slice(-2) + ('0'+d.getMinutes()).slice(-2);
+}
+
+async function exportResultsXLSX() {
+  if (typeof ExcelJS === 'undefined') {
+    alert('ExcelJS ライブラリの読み込みに失敗しました。インターネット接続を確認してください。');
+    return;
+  }
+  const scope = (document.querySelector('input[name="res_scope"]:checked')||{}).value || 'current';
+  const savedState = collectCurrentState();
+  const savedName  = ((document.getElementById('caseName')||{}).value) || '';
+  let caseList = [];
+  if (scope === 'all' && savedCases.length) caseList = savedCases.slice();
+  else caseList = [{ name: savedName||'現在の入力', state: savedState }];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = '木造軸組み工法 壁量・バランス・柱断面算定プログラム';
+  wb.created = new Date();
+
+  // 表紙
+  if (caseList.length > 1) {
+    const ws = wb.addWorksheet('表紙');
+    ws.columns = [{header:'項目', key:'k', width:30}, {header:'値', key:'v', width:60}];
+    ws.addRow({k:'タイトル', v:'木造軸組み工法用 壁量・バランス・柱の断面算定 — 計算結果'});
+    ws.addRow({k:'作成日時', v: new Date().toLocaleString('ja-JP')});
+    ws.addRow({k:'ケース数', v: caseList.length});
+    ws.addRow({k:'準拠基準', v:'建築基準法施行令第46条／告示第1100号(R7.4.1) ／ 告示第1024号'});
+    ws.addRow({});
+    ws.addRow({k:'No', v:'ケース名'});
+    caseList.forEach((c,i) => ws.addRow({k:(i+1), v:c.name||''}));
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EEF6'} };
+  }
+
+  for (let i = 0; i < caseList.length; i++) {
+    const c = caseList[i];
+    if (c.state) applyState(c.state);
+    await new Promise(r => setTimeout(r, 30));
+    try { Calc.exec(); WallCheck.syncFromCalc(); } catch(e){}
+    await new Promise(r => setTimeout(r, 30));
+    const prefix = caseList.length > 1 ? ('C'+(i+1)+'_') : '';
+    const isColumnOnly = (c.caseType === 'column');
+
+    /* ---------- 設定値 ---------- */
+    const wsIn = wb.addWorksheet(_safeSheetName(prefix+'設定値'));
+    wsIn.columns = [
+      { header:'カテゴリ', key:'cat', width:24 },
+      { header:'項目',     key:'lbl', width:36 },
+      { header:'値',       key:'val', width:18 },
+      { header:'単位/備考',key:'unit',width:20 }
+    ];
+    const inputCatsFull = [
+      ['基本条件', [
+        ['stories','階数','',''], ['usage','用途','',''],
+        ['grade','性能等級','',''], ['z_val','地域係数 Z','',''],
+        ['c0','標準せん断力係数 C0','-',''],
+        ['floor_dead','床固定荷重','N/㎡',''], ['floor_live','床積載荷重','N/㎡',''],
+        ['h2','2階階高','m',''], ['h1','1階階高','m',''], ['roof_h','屋根高さ','m',''],
+        ['area2','2階床面積','㎡',''], ['area1','1階床面積','㎡','']
+      ]],
+      ['仕様・荷重', [
+        ['mat_roof','屋根仕様','',''], ['mat_solar','太陽光設備','',''],
+        ['solar_mass','太陽光質量','kg',''], ['mat_wall','外壁仕様','',''],
+        ['insul_ceiling','天井断熱材','',''], ['insul_ceiling_density','天井断熱密度','kg/m³',''],
+        ['insul_ceiling_thick','天井断熱厚さ','mm',''],
+        ['insul_wall','外壁断熱材','',''], ['insul_wall_density1','外壁断熱① 密度','kg/m³',''],
+        ['insul_wall_thick1','外壁断熱① 厚さ','mm',''], ['insul_wall_density2','外壁断熱② 密度','kg/m³',''],
+        ['insul_wall_thick2','外壁断熱② 厚さ','mm',''],
+        ['is_heavy_snow','多雪区域','',''], ['val_snow_d','最深積雪量','cm',''],
+        ['val_snow_w','積雪単位荷重','N/㎡/cm',''],
+        ['kobai','屋根勾配','/10',''], ['noki','軒の出','m','']
+      ]],
+      ['風圧力', [
+        ['chk_wind_check','風圧力検討','',''], ['wind_coeff','風圧力係数','cm/㎡',''],
+        ['wind_aw_x1','1F 見付 X','㎡',''], ['wind_aw_y1','1F 見付 Y','㎡',''],
+        ['wind_aw_x2','2F 見付 X','㎡',''], ['wind_aw_y2','2F 見付 Y','㎡','']
+      ]],
+      ['柱', [
+        ['col_floor','検討階','',''], ['col_pos','負担部位','',''],
+        ['col_ae','負担面積','㎡',''], ['col_w_min','短辺','mm',''],
+        ['col_w_max','長辺','mm',''], ['mat_cat','材種・区分','',''],
+        ['mat_spec','樹種詳細','',''], ['mat_grade','等級選択','','']
+      ]]
+    ];
+    const inputCatsCol = [
+      ['基本条件 (柱算定用)', [
+        ['stories','階数','',''], ['usage','用途','',''],
+        ['floor_dead','床固定荷重','N/㎡',''],
+        ['h2','2階階高','m',''], ['h1','1階階高','m','']
+      ]],
+      ['柱', [
+        ['col_floor','検討階','',''], ['col_pos','負担部位','',''],
+        ['col_ae','負担面積','㎡',''], ['col_w_min','短辺','mm',''],
+        ['col_w_max','長辺','mm',''], ['mat_cat','材種・区分','',''],
+        ['mat_spec','樹種詳細','',''], ['mat_grade','等級選択','','']
+      ]]
+    ];
+    const inputCats = isColumnOnly ? inputCatsCol : inputCatsFull;
+    inputCats.forEach(([cat, items]) => {
+      items.forEach(([id, lbl, unit]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let v;
+        if (el.tagName === 'SELECT') {
+          const opt = el.options[el.selectedIndex];
+          v = opt ? opt.text : el.value;
+        } else if (el.type === 'checkbox') {
+          v = el.checked ? 'ON' : 'OFF';
+        } else {
+          const fv = parseFloat(el.value);
+          v = (el.value !== '' && isFinite(fv) && String(fv) === el.value) ? fv : el.value;
+        }
+        wsIn.addRow({cat, lbl, val:v, unit});
+      });
+    });
+    wsIn.getRow(1).font = { bold: true };
+    wsIn.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EEF6'} };
+    wsIn.views = [{ state:'frozen', ySplit:1 }];
+
+    /* ---------- 計算結果 ---------- */
+    const r = collectCurrentResults();
+    const wsR = wb.addWorksheet(_safeSheetName(prefix+'計算結果'));
+    wsR.columns = [{header:'項目', key:'k', width:32}, {header:'値', key:'v', width:18}, {header:'単位/備考', key:'u', width:24}];
+    wsR.addRow({k:'ケース名', v: c.name||'', u:''});
+    wsR.addRow({k:'種別',     v: isColumnOnly ? '柱断面のみ' : '全項目', u:''});
+    if (!isColumnOnly) {
+      wsR.addRow({k:'階数',     v: r.stories===2 ? '2階建' : '平屋', u:''});
+      wsR.addRow({});
+      if (r.W1_kN !== '') wsR.addRow({k:'1階重量 ΣW1', v:r.W1_kN, u:'kN'});
+      if (r.W2_kN !== '' && r.stories===2) wsR.addRow({k:'2階重量 ΣW2', v:r.W2_kN, u:'kN'});
+      if (r.Ai2 !== '' && r.stories===2)   wsR.addRow({k:'Ai2',         v:r.Ai2, u:'-'});
+      wsR.addRow({k:'1階 必要壁量 X', v:r.req_1x||0, u:'cm'});
+      wsR.addRow({k:'1階 必要壁量 Y', v:r.req_1y||0, u:'cm'});
+      if (r.stories===2) {
+        wsR.addRow({k:'2階 必要壁量 X', v:r.req_2x||0, u:'cm'});
+        wsR.addRow({k:'2階 必要壁量 Y', v:r.req_2y||0, u:'cm'});
+      }
+      wsR.addRow({k:'1階 存在壁量 X', v:r.exist_x_1f||0, u:'cm'});
+      wsR.addRow({k:'1階 存在壁量 Y', v:r.exist_y_1f||0, u:'cm'});
+      if (r.stories===2) {
+        wsR.addRow({k:'2階 存在壁量 X', v:r.exist_x_2f||0, u:'cm'});
+        wsR.addRow({k:'2階 存在壁量 Y', v:r.exist_y_2f||0, u:'cm'});
+      }
+      wsR.addRow({k:'判定 X(1F)', v:r.judge_x_1f||'-', u:''});
+      wsR.addRow({k:'判定 Y(1F)', v:r.judge_y_1f||'-', u:''});
+      if (r.stories===2) {
+        wsR.addRow({k:'判定 X(2F)', v:r.judge_x_2f||'-', u:''});
+        wsR.addRow({k:'判定 Y(2F)', v:r.judge_y_2f||'-', u:''});
+      }
+    }
+    wsR.addRow({});
+    if (r.Fc)      wsR.addRow({k:'柱 基準強度 Fc',         v:r.Fc, u:'N/㎟'});
+    if (r.fk)      wsR.addRow({k:'柱 長期許容応力度 fk',   v:r.fk, u:'N/㎟'});
+    if (r.lambda)  wsR.addRow({k:'柱 細長比 λ',            v:r.lambda, u:'-'});
+    if (r.N_act)   wsR.addRow({k:'柱 発生軸力 N',          v:r.N_act, u:'kN'});
+    if (r.N_allow) wsR.addRow({k:'柱 許容耐力 Na',         v:r.N_allow, u:'kN'});
+    if (r.col_judge) wsR.addRow({k:'柱 判定',              v:r.col_judge, u:r.col_msg});
+    wsR.addRow({k:isColumnOnly ? '柱断面 判定' : '総合判定', v: r._ok ? 'OK' : 'NG', u:''});
+    wsR.getRow(1).font = { bold: true };
+    wsR.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EEF6'} };
+    wsR.views = [{ state:'frozen', ySplit:1 }];
+
+    /* ---------- 壁量表（柱断面のみケースは出力しない） ---------- */
+    if (isColumnOnly) continue;
+    const wsW = wb.addWorksheet(_safeSheetName(prefix+'壁量表'));
+    wsW.columns = [
+      {header:'階', key:'fl', width:6}, {header:'方向', key:'ax', width:6},
+      {header:'通り', key:'nm', width:12}, {header:'仕様', key:'sp', width:36},
+      {header:'倍率', key:'r', width:8}, {header:'長さ(m)', key:'l', width:10},
+      {header:'数', key:'c', width:6}, {header:'壁量(cm)', key:'v', width:12}
+    ];
+    ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
+      const tb = document.getElementById('wc_table_'+k);
+      if (!tb) return;
+      const ax = k.split('_')[0].toUpperCase();
+      const fl = k.split('_')[1].toUpperCase();
+      tb.querySelectorAll('tbody tr').forEach(tr => {
+        wsW.addRow({
+          fl, ax,
+          nm: tr.querySelector('.wc_rowname').value,
+          sp: tr.querySelector('.wc_name').value,
+          r: parseFloat(tr.querySelector('.wc_ratio').value)||0,
+          l: parseFloat(tr.querySelector('.wc_len').value)||0,
+          c: parseInt(tr.querySelector('.wc_count').value)||0,
+          v: parseFloat(tr.querySelector('.wc_val').value)||0
+        });
+      });
+    });
+    wsW.getRow(1).font = { bold: true };
+    wsW.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EEF6'} };
+    wsW.views = [{ state:'frozen', ySplit:1 }];
+
+    /* ---------- 詳細計算ログ ---------- */
+    const logEl = document.getElementById('calc_log');
+    if (logEl && logEl.textContent.trim()) {
+      const wsL = wb.addWorksheet(_safeSheetName(prefix+'詳細計算ログ'));
+      wsL.columns = [{header:'計算ログ', key:'l', width:130}];
+      wsL.getRow(1).font = { bold: true };
+      wsL.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE9EEF6'} };
+      const rows = logEl.querySelectorAll('h4, .log-row');
+      rows.forEach(el => {
+        if (el.tagName === 'H4') {
+          const row = wsL.addRow({l: '【'+el.textContent.trim()+'】'});
+          row.font = { bold:true };
+        } else {
+          const k = el.querySelector('.log-key');
+          const f = el.querySelector('.log-formula');
+          const v = el.querySelector('.log-val');
+          const n = el.querySelector('.log-note');
+          const line = (k?k.textContent.trim():'')
+                     + (f?'  '+f.textContent.trim():'')
+                     + '  =  ' + (v?v.textContent.trim():'')
+                     + (n?'  ('+n.textContent.trim()+')':'');
+          wsL.addRow({l: line});
+        }
+      });
+      wsL.views = [{ state:'frozen', ySplit:1 }];
+    }
+  }
+
+  // 元の状態 復元
+  if (caseList.length > 1 || scope === 'all') {
+    applyState(savedState);
+    const ne = document.getElementById('caseName'); if (ne) ne.value = savedName;
+  }
+
+  let fname;
+  if (caseList.length > 1) fname = '計算結果_' + caseList.length + '件_' + _ymdhm() + '.xlsx';
+  else fname = '計算結果_' + (caseList[0].name||'').replace(/[\\\/\:\*\?"<>\|]/g,'_') + '_' + _ymdhm() + '.xlsx';
+
+  try {
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) {
+    alert('Excel 書出しに失敗しました: ' + e.message);
+  }
+}
+
+/* ===== 計算書出力 (新規ウィンドウ, 表紙/目次/改ページ/複数ケース) ===== */
+function toggleAllReportOptions(v) {
+  ['rep_cover','rep_toc','rep_input','rep_wall','rep_wallcheck','rep_column','rep_calc_log','rep_caseList','rep_formulas','rep_logic'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.checked = !!v;
+  });
+}
+function _opt(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+
+/* 入力諸元の表 */
+function _buildInputTableForReport() {
+  const cats = [
+    ['基本条件', ['stories','usage','grade','z_val','c0','floor_dead','floor_live','h2','h1','roof_h','area2','area1']],
+    ['仕様・荷重', ['mat_roof','mat_solar','solar_mass','mat_wall','insul_ceiling','insul_ceiling_density','insul_ceiling_thick','insul_wall','insul_wall_density1','insul_wall_thick1','insul_wall_density2','insul_wall_thick2','is_heavy_snow','val_snow_d','val_snow_w','kobai','noki']],
+    ['風圧力', ['chk_wind_check','wind_coeff','wind_aw_x1','wind_aw_y1','wind_aw_x2','wind_aw_y2']],
+    ['柱', ['col_floor','col_pos','col_ae','col_w_min','col_w_max','mat_cat','mat_spec','mat_grade']]
+  ];
+  const labelMap = {
+    stories:'階数', usage:'用途', grade:'性能等級', z_val:'地域係数 Z', c0:'標準せん断力係数 C0',
+    floor_dead:'床固定荷重 [N/㎡]', floor_live:'床積載荷重 [N/㎡]',
+    h2:'2階階高 [m]', h1:'1階階高 [m]', roof_h:'屋根高さ [m]', area2:'2階床面積 [㎡]', area1:'1階床面積 [㎡]',
+    mat_roof:'屋根仕様', mat_solar:'太陽光設備', solar_mass:'太陽光質量 [kg]', mat_wall:'外壁仕様',
+    insul_ceiling:'天井断熱材', insul_ceiling_density:'天井断熱 密度 [kg/m³]', insul_ceiling_thick:'天井断熱 厚さ [mm]',
+    insul_wall:'外壁断熱材', insul_wall_density1:'外壁断熱① 密度 [kg/m³]', insul_wall_thick1:'外壁断熱① 厚さ [mm]',
+    insul_wall_density2:'外壁断熱② 密度 [kg/m³]', insul_wall_thick2:'外壁断熱② 厚さ [mm]',
+    is_heavy_snow:'多雪区域', val_snow_d:'最深積雪量 [cm]', val_snow_w:'積雪単位荷重 [N/㎡/cm]',
+    kobai:'屋根勾配 [/10]', noki:'軒の出 [m]',
+    chk_wind_check:'風圧力検討',
+    wind_coeff:'風圧力係数 [cm/㎡]', wind_aw_x1:'1F 見付 X [㎡]', wind_aw_y1:'1F 見付 Y [㎡]',
+    wind_aw_x2:'2F 見付 X [㎡]', wind_aw_y2:'2F 見付 Y [㎡]',
+    col_floor:'検討階', col_pos:'負担部位', col_ae:'負担面積 [㎡]',
+    col_w_min:'短辺 [mm]', col_w_max:'長辺 [mm]', mat_cat:'材種・区分', mat_spec:'樹種詳細', mat_grade:'等級選択'
+  };
+  let html = '<h3>入力諸元</h3>';
+  for (const [cat, ids] of cats) {
+    html += '<table><thead><tr><th class="l" style="width:55%">'+_escHtml(cat)+'</th><th class="l">値</th></tr></thead><tbody>';
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      let v;
+      if (el.tagName === 'SELECT') {
+        const opt = el.options[el.selectedIndex];
+        v = opt ? opt.text : el.value;
+      } else if (el.type === 'checkbox') {
+        v = el.checked ? '✓' : '－';
+      } else { v = el.value; }
+      html += '<tr><td class="l">'+_escHtml(labelMap[id]||id)+'</td><td class="l">'+_escHtml(v)+'</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  return html;
+}
+
+/* 必要壁量の算出 セクション */
+function _buildWallSection() {
+  const r = Calc.results || {};
+  const stories = parseInt((document.getElementById('stories')||{}).value) || 1;
+  let html = '<h3>必要壁量の算出</h3>';
+  html += '<table><thead><tr><th class="l">項目</th><th class="l">値</th></tr></thead><tbody>';
+  if (typeof r.W1 === 'number') html += '<tr><td class="l">1階 地震用重量 ΣW1</td><td class="l">'+r.W1.toFixed(2)+' kN</td></tr>';
+  if (typeof r.W2 === 'number' && stories===2) html += '<tr><td class="l">2階 地震用重量 ΣW2</td><td class="l">'+r.W2.toFixed(2)+' kN</td></tr>';
+  if (typeof r.Ai2 === 'number' && stories===2) html += '<tr><td class="l">Ai2 (2階層せん断力係数)</td><td class="l">'+r.Ai2.toFixed(3)+'</td></tr>';
+  html += '<tr><td class="l">1階 必要壁量 cm/㎡</td><td class="l">'+(r.lw1||0)+'</td></tr>';
+  if (stories===2) html += '<tr><td class="l">2階 必要壁量 cm/㎡</td><td class="l">'+(r.lw2||0)+'</td></tr>';
+  html += '<tr><td class="l">1階 X 方向 必要壁量(総量)</td><td class="l">'+(r.req_1x||0)+' cm</td></tr>';
+  html += '<tr><td class="l">1階 Y 方向 必要壁量(総量)</td><td class="l">'+(r.req_1y||0)+' cm</td></tr>';
+  if (stories===2) {
+    html += '<tr><td class="l">2階 X 方向 必要壁量(総量)</td><td class="l">'+(r.req_2x||0)+' cm</td></tr>';
+    html += '<tr><td class="l">2階 Y 方向 必要壁量(総量)</td><td class="l">'+(r.req_2y||0)+' cm</td></tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+/* 壁量／バランス セクション */
+function _buildWallCheckSection() {
+  const stories = parseInt((document.getElementById('stories')||{}).value) || 1;
+  const wcj = id => (document.getElementById(id)||{}).textContent || '';
+  const wce = id => (document.getElementById(id)||{}).textContent || '0';
+  const wcr = id => (document.getElementById(id)||{}).textContent || '0';
+  let html = '<h3>壁量充足チェック</h3>';
+  html += '<table><thead><tr><th class="l">階</th><th>方向</th><th>存在壁量(cm)</th><th>必要壁量(cm)</th><th>判定</th></tr></thead><tbody>';
+  const okNg = j => j === 'OK' ? '<b style="color:#080">OK</b>' : (j === 'NG' ? '<b style="color:#c00">NG</b>' : '-');
+  html += '<tr><td class="l">1F</td><td>X</td><td>'+wce('wc_exist_x_1f')+'</td><td>'+wcr('wc_req_disp_x_1f')+'</td><td>'+okNg(wcj('wc_judge_x_1f'))+'</td></tr>';
+  html += '<tr><td class="l">1F</td><td>Y</td><td>'+wce('wc_exist_y_1f')+'</td><td>'+wcr('wc_req_disp_y_1f')+'</td><td>'+okNg(wcj('wc_judge_y_1f'))+'</td></tr>';
+  if (stories===2) {
+    html += '<tr><td class="l">2F</td><td>X</td><td>'+wce('wc_exist_x_2f')+'</td><td>'+wcr('wc_req_disp_x_2f')+'</td><td>'+okNg(wcj('wc_judge_x_2f'))+'</td></tr>';
+    html += '<tr><td class="l">2F</td><td>Y</td><td>'+wce('wc_exist_y_2f')+'</td><td>'+wcr('wc_req_disp_y_2f')+'</td><td>'+okNg(wcj('wc_judge_y_2f'))+'</td></tr>';
+  }
+  html += '</tbody></table>';
+
+  // 各テーブルの壁量行 (X1F/Y1F/X2F/Y2F)
+  ['x_1f','y_1f','x_2f','y_2f'].forEach(k => {
+    const tb = document.getElementById('wc_table_'+k);
+    if (!tb) return;
+    if (k.endsWith('2f') && stories!==2) return;
+    const ax = k.split('_')[0].toUpperCase();
+    const fl = k.split('_')[1].toUpperCase();
+    const rows = tb.querySelectorAll('tbody tr');
+    if (!rows.length) return;
+    html += '<h3 style="font-size:10pt;">'+fl+' '+ax+' 方向 壁量明細</h3>';
+    html += '<table><thead><tr><th>通り</th><th class="l">仕様</th><th>倍率</th><th>長さ(m)</th><th>数</th><th>壁量(cm)</th></tr></thead><tbody>';
+    rows.forEach(tr => {
+      html += '<tr>'
+        + '<td>'+_escHtml(tr.querySelector('.wc_rowname').value)+'</td>'
+        + '<td class="l">'+_escHtml(tr.querySelector('.wc_name').value)+'</td>'
+        + '<td>'+_escHtml(tr.querySelector('.wc_ratio').value)+'</td>'
+        + '<td>'+_escHtml(tr.querySelector('.wc_len').value)+'</td>'
+        + '<td>'+_escHtml(tr.querySelector('.wc_count').value)+'</td>'
+        + '<td>'+_escHtml(tr.querySelector('.wc_val').value)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  });
+
+  // 四分割法
+  if (document.getElementById('chk_4div_check') && document.getElementById('chk_4div_check').checked) {
+    html += '<h3>四分割法 バランス検討</h3>';
+    [['1f','1F'],['2f','2F']].forEach(([fl, lbl]) => {
+      if (fl==='2f' && stories!==2) return;
+      ['x','y'].forEach(ax => {
+        const s1 = ax==='x' ? 't' : 'l';
+        const s2 = ax==='x' ? 'b' : 'r';
+        const sum1 = (document.getElementById('wc_4sum_'+ax+'_'+fl+'_'+s1)||{}).textContent || '0';
+        const sum2 = (document.getElementById('wc_4sum_'+ax+'_'+fl+'_'+s2)||{}).textContent || '0';
+        const req1 = (document.getElementById('wc_4req_'+ax+'_'+fl+'_'+s1)||{}).textContent || '0';
+        const req2 = (document.getElementById('wc_4req_'+ax+'_'+fl+'_'+s2)||{}).textContent || '0';
+        const res1 = (document.getElementById('res_4bal_'+ax+'_'+fl+'_l')||{}).textContent || '-';
+        const res2 = (document.getElementById('res_4bal_'+ax+'_'+fl+'_r')||{}).textContent || '-';
+        const lblZone1 = ax==='x' ? '上端' : '左端';
+        const lblZone2 = ax==='x' ? '下端' : '右端';
+        html += '<table><thead><tr><th class="l">'+lbl+' '+ax.toUpperCase()+' 方向</th><th>必要壁量(cm)</th><th>存在壁量(cm)</th><th>判定/充足率</th></tr></thead><tbody>';
+        html += '<tr><td class="l">'+lblZone1+' 1/4ゾーン</td><td>'+req1+'</td><td>'+sum1+'</td><td>'+_escHtml(res1)+'</td></tr>';
+        html += '<tr><td class="l">'+lblZone2+' 1/4ゾーン</td><td>'+req2+'</td><td>'+sum2+'</td><td>'+_escHtml(res2)+'</td></tr>';
+        html += '</tbody></table>';
+      });
+    });
+  }
+  return html;
+}
+
+/* 柱の断面算定 セクション */
+function _buildColumnSection() {
+  const j = (document.getElementById('col_judge')||{}).textContent || '-';
+  const m = (document.getElementById('col_msg')||{}).textContent || '';
+  const okNg = j === 'OK' ? '<b style="color:#080">OK</b>' : (j === 'NG' ? '<b style="color:#c00">NG</b>' : '-');
+  let html = '<h3>柱の断面算定</h3>';
+  html += '<table><thead><tr><th class="l">項目</th><th class="l">計算値</th><th class="l">基準/許容</th></tr></thead><tbody>';
+  html += '<tr><td class="l">床面積あたり荷重</td><td>'+_escHtml((document.getElementById('chk_wd')||{}).textContent||'-')+' N/㎡</td><td>(平均荷重法)</td></tr>';
+  html += '<tr><td class="l">発生軸力</td><td>'+_escHtml((document.getElementById('chk_n_act')||{}).textContent||'-')+' kN</td><td>'+_escHtml((document.getElementById('chk_n_allow')||{}).textContent||'-')+' kN</td></tr>';
+  html += '<tr><td class="l">有効細長比 λ</td><td>'+_escHtml((document.getElementById('chk_lambda')||{}).textContent||'-')+'</td><td>≦ 150</td></tr>';
+  html += '<tr><td class="l">長期許容応力度 fk</td><td>'+_escHtml((document.getElementById('chk_fk')||{}).textContent||'-')+' N/㎟</td><td>1.1/3 × Fc × Kd</td></tr>';
+  html += '<tr><td class="l">基準強度 Fc</td><td>'+_escHtml((document.getElementById('disp_fc')||{}).textContent||'-')+' N/㎟</td><td>(等級・樹種)</td></tr>';
+  html += '<tr><td class="l">判定</td><td>'+okNg+'</td><td>'+_escHtml(m)+'</td></tr>';
+  html += '</tbody></table>';
+  return html;
+}
+
+/* ケース1件分の本文 */
+function _buildCaseBody(c, idx, total) {
+  const isColumnOnly = (c.caseType === 'column');
+  // 柱断面のみケースは壁量関連の出力をスキップし、柱情報のみを 1 ページに集約
+  if (isColumnOnly) {
+    let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+' 柱断面: '+_escHtml(c.name||'')+'">';
+    html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+_escHtml(c.name||'')+' <small style="font-weight:normal;color:#666;">(柱断面のみ)</small></h2>';
+    if (_opt('rep_input'))  html += _buildColumnInputTable();
+    if (_opt('rep_column')) html += _buildColumnSection();
+    html += '<div class="page-number"></div></div>';
+    return html;
+  }
+
+  let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+': '+_escHtml(c.name||'')+'">';
+  html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+_escHtml(c.name||'')+'</h2>';
+  if (_opt('rep_input'))     html += _buildInputTableForReport();
+  if (_opt('rep_wall'))      html += _buildWallSection();
+  html += '<div class="page-number"></div></div>';
+
+  if (_opt('rep_wallcheck')) {
+    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-wc" data-toc-label="ケース '+(idx+1)+' 壁量／バランス">';
+    html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'壁量／バランス検討</h2>';
+    html += _buildWallCheckSection();
+    html += '<div class="page-number"></div></div>';
+  }
+  if (_opt('rep_column')) {
+    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-col" data-toc-label="ケース '+(idx+1)+' 柱の断面算定">';
+    html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'柱の断面算定</h2>';
+    html += _buildColumnSection();
+    html += '<div class="page-number"></div></div>';
+  }
+  if (_opt('rep_calc_log')) {
+    const logEl = document.getElementById('calc_log');
+    if (logEl && logEl.textContent.trim()) {
+      html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-log" data-toc-label="ケース '+(idx+1)+' 詳細計算ログ">';
+      html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'詳細計算ログ</h2>';
+      html += '<div class="report-log">'+logEl.innerHTML+'</div>';
+      html += '<div class="page-number"></div></div>';
+    }
+  }
+  return html;
+}
+
+/* 柱断面のみケース 用の入力諸元テーブル（柱関連のみ） */
+function _buildColumnInputTable() {
+  const cats = [
+    ['基本条件 (柱算定用)', ['stories','usage','floor_dead','h2','h1']],
+    ['柱', ['col_floor','col_pos','col_ae','col_w_min','col_w_max','mat_cat','mat_spec','mat_grade']]
+  ];
+  const labelMap = {
+    stories:'階数', usage:'用途',
+    floor_dead:'床固定荷重 [N/㎡]',
+    h2:'2階階高 [m]', h1:'1階階高 [m]',
+    col_floor:'検討階', col_pos:'負担部位', col_ae:'負担面積 [㎡]',
+    col_w_min:'短辺 [mm]', col_w_max:'長辺 [mm]',
+    mat_cat:'材種・区分', mat_spec:'樹種詳細', mat_grade:'等級選択'
+  };
+  let html = '<h3>入力諸元（柱断面算定）</h3>';
+  for (const [cat, ids] of cats) {
+    html += '<table><thead><tr><th class="l" style="width:55%">'+_escHtml(cat)+'</th><th class="l">値</th></tr></thead><tbody>';
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      let v;
+      if (el.tagName === 'SELECT') {
+        const opt = el.options[el.selectedIndex];
+        v = opt ? opt.text : el.value;
+      } else { v = el.value; }
+      html += '<tr><td class="l">'+_escHtml(labelMap[id]||id)+'</td><td class="l">'+_escHtml(v)+'</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  return html;
+}
+
+function _buildCoverPage(caseList) {
+  const today = new Date().toLocaleString('ja-JP');
+  let html = '<div class="report-page rp-cover" id="rp-cover"><div style="margin-top:60mm;">';
+  html += '<h1 style="font-size:22pt; text-align:center; border:none; margin-bottom:6mm;">木造軸組み工法</h1>';
+  html += '<h1 style="font-size:18pt; text-align:center; border:none; margin-bottom:14mm;">壁量・バランス・柱の断面算定<br>計算書</h1>';
+  html += '<p style="text-align:center; font-size:11pt; color:#555; margin-top:8mm;">令和7年基準・地震／風圧・四分割対応</p>';
+  html += '<table style="margin:30mm auto 0; width:120mm; border:1px solid #888;">';
+  html += '<tr><th class="l" style="background:#e9eef6; width:36mm;">作成日時</th><td class="l">'+_escHtml(today)+'</td></tr>';
+  html += '<tr><th class="l" style="background:#e9eef6;">ケース数</th><td class="l">'+caseList.length+' 件</td></tr>';
+  html += '<tr><th class="l" style="background:#e9eef6;">準拠基準</th><td class="l">建築基準法施行令第46条／告示第1100号 (R7.4.1)<br>告示第1352号 (四分割法)／告示第1024号 (基準強度)</td></tr>';
+  html += '</table>';
+  html += '<p class="note" style="margin-top:30mm; text-align:center; color:#666;">本計算書は本プログラムによる自動算定結果です。<br>設計判断は別途有資格者が行ってください。</p>';
+  html += '</div></div>';
+  return html;
+}
+function _buildTOCPage() {
+  return '<div class="report-page rp-toc" id="rp-toc">'
+       + '<h1>目　次</h1>'
+       + '<div id="toc-content" style="margin-top:8mm; font-size:11pt; line-height:2.2;">(計算中...)</div>'
+       + '</div>';
+}
+function _buildCaseListPage(caseList) {
+  if (!caseList.length) return '';
+  let html = '<div class="report-page" data-toc-id="case-list" data-toc-label="保存済みケース一覧">';
+  html += '<h2>保存済みケース一覧</h2>';
+  html += '<table><thead><tr><th>No</th><th class="l">ケース名</th><th>種別</th><th>階数</th><th>1F 必要壁量<br>X / Y</th><th>2F 必要壁量<br>X / Y</th><th>柱判定</th><th>総合</th></tr></thead><tbody>';
+  caseList.forEach((c, i) => {
+    const r = c.results || {};
+    const isCol = (c.caseType === 'column');
+    const fmt = v => (v===0||v==null||v==='') ? '-' : (typeof v==='number' ? Math.ceil(v) : v);
+    const colJ = r.col_judge==='OK' ? '<b style="color:#080">OK</b>' : (r.col_judge==='NG' ? '<b style="color:#c00">NG</b>' : '-');
+    const all = r._ok===true ? '<b style="color:#080">OK</b>' : (r._ok===false ? '<b style="color:#c00">NG</b>' : '-');
+    const typeLbl = isCol ? '柱断面のみ' : '全項目';
+    html += '<tr><td>'+(i+1)+'</td><td class="l">'+_escHtml(c.name||'')+'</td><td>'+typeLbl+'</td>';
+    html += '<td>'+(isCol?'-':(r.stories===2?'2F':'1F'))+'</td>';
+    html += '<td>'+(isCol?'-':(fmt(r.req_1x)+' / '+fmt(r.req_1y)))+'</td>';
+    html += '<td>'+(isCol||r.stories!==2?'-':(fmt(r.req_2x)+' / '+fmt(r.req_2y)))+'</td>';
+    html += '<td>'+colJ+'</td><td>'+all+'</td></tr>';
+  });
+  html += '</tbody></table><div class="page-number"></div></div>';
+  return html;
+}
+function _buildFormulasPage() {
+  const logicEl = document.getElementById('logicDoc');
+  if (!logicEl) return '';
+  const formulas = logicEl.querySelectorAll('.ext-formula');
+  if (!formulas.length) return '';
+  let html = '<div class="report-page" data-toc-id="formulas" data-toc-label="使用式一覧"><h2>使用式一覧</h2>';
+  formulas.forEach((f, idx) => {
+    html += '<div class="formula"><b>('+(idx+1)+')</b> '+f.innerHTML+'</div>';
+  });
+  html += '<div class="page-number"></div></div>';
+  return html;
+}
+function _buildLogicPages() {
+  const logicEl = document.getElementById('logicDoc');
+  if (!logicEl) return '';
+  const children = Array.from(logicEl.children);
+  // h3 ごとに節 (section) 分割
+  const sections = [];
+  let cur = null;
+  children.forEach(el => {
+    if (el.tagName === 'H3') { if (cur) sections.push(cur); cur=[el]; }
+    else if (cur) cur.push(el);
+  });
+  if (cur) sections.push(cur);
+  if (!sections.length) return '';
+
+  // ページ構成: (1)+(2) / (3)+(4) / (5)+(6) / (7)
+  // 7 sections → 4 pages
+  const pageGroups = [];
+  const lastIdx = sections.length - 1;
+  let i = 0;
+  while (i < lastIdx) {
+    if (i + 1 < lastIdx) { pageGroups.push([sections[i], sections[i+1]]); i += 2; }
+    else { pageGroups.push([sections[i]]); i += 1; }
+  }
+  pageGroups.push([sections[lastIdx]]);
+
+  let html = '';
+  pageGroups.forEach((grp, gi) => {
+    const tocId = 'logic-' + (gi+1);
+    const fH3 = grp[0].find(e => e.tagName==='H3');
+    const lH3 = grp[grp.length-1].find(e => e.tagName==='H3');
+    let lbl;
+    if (fH3 === lH3) lbl = fH3 ? fH3.textContent.replace(/\s+/g,' ').trim() : '計算ロジック '+(gi+1);
+    else lbl = (fH3?fH3.textContent.replace(/\s+/g,' ').trim():'') + ' / ' + (lH3?lH3.textContent.replace(/\s+/g,' ').trim():'');
+    html += '<div class="report-page" data-toc-id="'+tocId+'" data-toc-label="'+_escHtml(lbl)+'">';
+    if (gi === 0) html += '<h2>計算ロジック詳細解説</h2>';
+    grp.forEach(section => section.forEach(el => { html += el.outerHTML; }));
+    html += '<div class="page-number"></div></div>';
+  });
+  return html;
+}
+
+function generateReport() {
+  const css = ''
+    + '@page { size: A4; margin: 0; }\n'
+    + 'html, body { margin: 0; padding: 0; }\n'
+    + 'body { font-family: "Yu Gothic","Meiryo","Hiragino Kaku Gothic ProN",sans-serif; color:#222; font-size: 10.5pt; line-height: 1.6; background:#dadee5; }\n'
+    + '.report-page { width: 210mm; min-height: 297mm; padding: 18mm 18mm 24mm 18mm; box-sizing: border-box; '
+    + '  position: relative; background: white; margin: 0 auto 6mm; page-break-after: always; break-after: page; }\n'
+    + '.report-page:last-child { page-break-after: auto; break-after: auto; }\n'
+    + '@media print { body { background: white; padding: 0; margin: 0; }\n'
+    + '  .report-page { margin: 0 !important; box-shadow: none !important; padding: 18mm 18mm 24mm 18mm; }\n'
+    + '  .no-print { display: none !important; } }\n'
+    + '@media screen { body { padding: 6mm 0; } .report-page { box-shadow: 0 2px 8px rgba(0,0,0,0.18); }\n'
+    + '  .toolbar { position: sticky; top: 0; background: #2c3e50; color:#fff; padding: 8px 16px; z-index:100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 8mm; }\n'
+    + '  .toolbar button { background:#fff; color:#2c3e50; border:none; padding:6px 18px; border-radius:3px; cursor:pointer; font-weight:bold; font-size:11pt; margin-right:8px; }\n'
+    + '  .toolbar button:hover { background:#e9eef6; } }\n'
+    + 'h1 { font-size: 16pt; color: #2c3e50; border-bottom: 2.5px solid #2c3e50; padding-bottom: 4mm; margin: 0 0 6mm; }\n'
+    + 'h2 { font-size: 13pt; color: #2c3e50; border-bottom: 1.5px solid #2c3e50; padding-bottom: 2mm; margin: 0 0 5mm; break-after: avoid; page-break-after: avoid; }\n'
+    + 'h3 { font-size: 11pt; color: #2c3e50; border-left: 4px solid #3498db; padding-left: 3mm; margin: 5mm 0 2mm; break-after: avoid; page-break-after: avoid; }\n'
+    + 'table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.5pt; break-inside: avoid; page-break-inside: avoid; }\n'
+    + 'th, td { border: 1px solid #888; padding: 1.2mm 2mm; text-align: right; vertical-align: top; }\n'
+    + 'th { background: #e9eef6; font-weight: bold; }\n'
+    + '.l { text-align: left; }\n'
+    + 'tr { break-inside: avoid; page-break-inside: avoid; }\n'
+    + '.no-break { break-inside: avoid; page-break-inside: avoid; }\n'
+    + '.formula, .ext-formula { background: #f4f6fa; padding: 2mm 3mm; border-left: 3px solid #2c3e50; margin: 2mm 0; font-size: 10pt; line-height: 1.7; break-inside: avoid; page-break-inside: avoid; }\n'
+    + '.note { font-size: 9.5pt; color: #555; margin: 2mm 0; }\n'
+    + '.page-number { position: absolute; bottom: 10mm; left: 0; right: 0; text-align: center; font-size: 9.5pt; color: #555; }\n'
+    + '.toc-item { display: flex; justify-content: space-between; padding: 2mm 4mm; border-bottom: 1px dotted #aaa; }\n'
+    + '.toc-item .toc-label { flex: 1; }\n'
+    + '.toc-item .toc-page { color: #2c3e50; font-weight: bold; min-width: 24mm; text-align: right; }\n'
+    + '.toc-item.toc-section { background: #f4f6fa; font-weight: bold; }\n'
+    // 計算ログ ブロック
+    + '.report-log { background:#fafafa; border:1px solid #ccc; padding:3mm; font-size:9pt; line-height:1.45; }\n'
+    + '.report-log h4 { color:#2c3e50; border-left:3px solid #2c3e50; padding-left:3mm; margin:3mm 0 1mm; font-size:10pt; }\n'
+    + '.report-log .log-row { display:grid; grid-template-columns: minmax(120px,auto) 1fr auto; gap:6px; padding:0.5mm 0; border-bottom:1px dotted #ccc; }\n'
+    + '.report-log .log-key { color:#444; }\n'
+    + '.report-log .log-formula { color:#555; font-family: Consolas,monospace; font-size:8.5pt; }\n'
+    + '.report-log .log-val { font-family: Consolas,monospace; color:#111; font-weight:bold; }\n'
+    + '.report-log .log-note { color:#777; font-size:8pt; }\n';
+
+  const scope = (document.querySelector('input[name="rep_scope"]:checked')||{}).value || 'current';
+  const savedState = collectCurrentState();
+  const savedCaseName = ((document.getElementById('caseName')||{}).value) || '';
+  let caseList = [];
+  if (scope === 'all') {
+    caseList = savedCases.slice();
+    if (!caseList.length) caseList = [{ name: savedCaseName||'現在の入力', state: savedState }];
+  } else {
+    caseList = [{ name: savedCaseName||'現在の入力', state: savedState }];
+  }
+
+  let body = '';
+  if (_opt('rep_cover')) body += _buildCoverPage(caseList);
+  if (_opt('rep_toc'))   body += _buildTOCPage();
+
+  for (let i = 0; i < caseList.length; i++) {
+    const c = caseList[i];
+    if (c.state) applyState(c.state);
+    try { Calc.exec(); WallCheck.syncFromCalc(); } catch(e){}
+    body += _buildCaseBody(c, i, caseList.length);
+  }
+  if (caseList.length > 1 || scope === 'all') {
+    applyState(savedState);
+    const ne = document.getElementById('caseName'); if (ne) ne.value = savedCaseName;
+    try { Calc.exec(); WallCheck.syncFromCalc(); } catch(e){}
+  }
+
+  if (_opt('rep_caseList') && savedCases.length) body += _buildCaseListPage(savedCases);
+  if (_opt('rep_formulas')) body += _buildFormulasPage();
+  if (_opt('rep_logic'))    body += _buildLogicPages();
+
+  const initScript = ''
+    + 'function _initReport(){\n'
+    + '  const pages = Array.from(document.querySelectorAll(".report-page"));\n'
+    + '  const numbered = pages.filter(function(p){ return p.id !== "rp-cover" && p.id !== "rp-toc"; });\n'
+    + '  numbered.forEach(function(p, i){\n'
+    + '    const pn = p.querySelector(".page-number");\n'
+    + '    if (pn) pn.textContent = "- " + (i+1) + " -";\n'
+    + '  });\n'
+    + '  const tocEl = document.getElementById("toc-content");\n'
+    + '  if (tocEl) {\n'
+    + '    let html = "";\n'
+    + '    numbered.forEach(function(p, i){\n'
+    + '      const id = p.getAttribute("data-toc-id");\n'
+    + '      const lbl = p.getAttribute("data-toc-label");\n'
+    + '      if (!id || !lbl) return;\n'
+    + '      const cls = id.indexOf("logic-")===0 ? "" : (id.indexOf("case-")===0 && id.indexOf("-")===id.lastIndexOf("-") ? " toc-section" : "");\n'
+    + '      html += "<div class=\\"toc-item" + cls + "\\"><span class=\\"toc-label\\">" + lbl + "</span>"\n'
+    + '            + "<span class=\\"toc-page\\">" + (i+1) + " ページ</span></div>";\n'
+    + '    });\n'
+    + '    tocEl.innerHTML = html || "(目次対象ページがありません)";\n'
+    + '  }\n'
+    + '}\n'
+    + 'if (document.readyState === "complete" || document.readyState === "interactive") _initReport();\n'
+    + 'else window.addEventListener("DOMContentLoaded", _initReport);\n';
+
+  const toolbar = '<div class="toolbar no-print">'
+    + '<button onclick="window.print()">印刷／PDF 保存</button>'
+    + '<button onclick="window.close()">閉じる</button>'
+    + '<span style="float:right; font-size:10pt; opacity:0.85;">A4 / 余白 18mm / 自動ページ番号</span>'
+    + '</div>';
+
+  // 注意: インライン SCRIPT 要素内に文字列リテラルとして開閉タグを直接書くと、
+  //   一部ブラウザの HTML パーサーがスクリプト要素を途中で閉じてしまい構文エラーになる。
+  //   これを避けるため、開きタグ・閉じタグを実行時に分割連結で構築する。
+  const LT = String.fromCharCode(60); // '<'
+  const GT = String.fromCharCode(62); // '>'
+  const SLASH = '/';
+  const TAG_OPEN_S    = LT + 'script' + GT;
+  const TAG_CLOSE_S   = LT + SLASH + 'script' + GT;
+  const STYLE_OPEN_S  = LT + 'style' + GT;
+  const STYLE_CLOSE_S = LT + SLASH + 'style' + GT;
+  const HEAD_CLOSE    = LT + SLASH + 'head' + GT;
+  const BODY_OPEN     = LT + 'body' + GT;
+  const BODY_CLOSE    = LT + SLASH + 'body' + GT;
+  const HTML_CLOSE    = LT + SLASH + 'html' + GT;
+  const fullHtml = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'
+    + '<title>木造軸組み工法 壁量・バランス・柱断面算定 計算書</title>'
+    + STYLE_OPEN_S + css + STYLE_CLOSE_S
+    + HEAD_CLOSE + BODY_OPEN
+    + toolbar + body
+    + TAG_OPEN_S + initScript + TAG_CLOSE_S
+    + BODY_CLOSE + HTML_CLOSE;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.open(); w.document.write(fullHtml); w.document.close(); }
+  else alert('ポップアップがブロックされました。新規タブを許可してください。');
+}
 </script>
 </body>
 </html>
