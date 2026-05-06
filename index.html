@@ -189,10 +189,14 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
           </select>
         </div>
         <div class="row">
-          <label>用途 (積載荷重)</label>
-          <select id="usage" onchange="Calc.exec()">
-            <option value="res">住宅 (P=600/1300)</option>
-            <option value="office">事務所 (P=800/1800)</option>
+          <label>用途</label>
+          <select id="usage" onchange="UI.onUsageChange(); Calc.exec()">
+            <option value="res">住宅</option>
+            <option value="office">事務所</option>
+            <option value="classroom">教室</option>
+            <option value="shop">店舗</option>
+            <option value="assembly">集会場</option>
+            <option value="warehouse">倉庫</option>
           </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -212,6 +216,25 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
               <option value="0.8">0.8</option>
               <option value="0.7">0.7</option>
             </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="row">
+            <label>標準せん断力係数 C<sub>0</sub></label>
+            <input type="number" id="c0" value="0.2" step="0.05" min="0.01" onchange="Calc.exec()">
+            <span style="font-size:0.75rem; color:#c62828; display:block; margin-top:2px;">※軟弱地盤の場合は0.3（不明な場合は特定行政庁に確認）</span>
+          </div>
+          <div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="row">
+            <label>床固定荷重 (N/㎡)</label>
+            <input type="number" id="floor_dead" value="610" step="1" min="0" onchange="Calc.exec()">
+          </div>
+          <div class="row">
+            <label>床積載荷重 (N/㎡)</label>
+            <input type="number" id="floor_live" value="600" step="1" min="0" onchange="Calc.exec()">
+            <span id="floor_live_auto_note" style="font-size:0.75rem; color:#888; display:block; margin-top:2px;">※住宅: 600 N/㎡</span>
           </div>
         </div>
 
@@ -234,23 +257,16 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
         </div>
         
         <div class="row">
-          <label>多雪区域</label>
-          <select id="is_heavy_snow" onchange="UI.toggle('snow'); Calc.exec();">
-            <option value="no">なし (一般区域)</option>
-            <option value="yes">あり (多雪区域)</option>
-          </select>
-        </div>
-        <div id="pnl_snow" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="row"><label>垂直積雪量 (cm)</label><input type="number" id="val_snow_d" value="50" onchange="Calc.exec()"></div>
-          <div class="row"><label>単位荷重 N/m²/cm</label><input type="number" id="val_snow_w" value="30" onchange="Calc.exec()"></div>
-        </div>
-
-        <div class="row">
-          <label>太陽光パネル</label>
-          <select id="mat_solar" onchange="Calc.exec();">
+          <label>太陽光設備</label>
+          <select id="mat_solar" onchange="UI.toggle('solar'); Calc.exec();">
             <option value="0">なし</option>
-            <option value="200">あり (200 N/㎡)</option>
+            <option value="260">あり (260 N/㎡)</option>
+            <option value="custom">あり (任意入力)</option>
           </select>
+        </div>
+        <div class="row" id="grp_solar_mass" style="display:none;">
+          <label>太陽光設備の質量 (kg)</label>
+          <input type="number" id="solar_mass" value="0" step="1" min="0" onchange="Calc.exec()">
         </div>
 
         <div class="row"><label>外壁仕様</label>
@@ -263,8 +279,56 @@ body.pdf-mode #wall #disp_lw2 { font-size: 1.8rem !important; }
           </select>
         </div>
 
+        <div class="row">
+          <label>天井断熱材</label>
+          <select id="insul_ceiling" onchange="UI.toggle('insul_ceiling'); Calc.exec();">
+            <option value="0">なし</option>
+            <option value="100" selected>あり (100 N/㎡)</option>
+            <option value="gw16">GW16K</option>
+            <option value="gw24">GW24K</option>
+            <option value="uf14">吹付ウレタン14K</option>
+            <option value="cf55">セルロースファイバー55K</option>
+            <option value="custom">任意入力</option>
+          </select>
+        </div>
+        <div id="pnl_insul_ceiling" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="row"><label>天井断熱 密度 (kg/m³)</label><input type="number" id="insul_ceiling_density" value="16" step="1" min="0" onchange="Calc.exec()"></div>
+          <div class="row"><label>天井断熱 厚さ (mm)</label><input type="number" id="insul_ceiling_thick" value="100" step="1" min="0" onchange="Calc.exec()"></div>
+        </div>
+
+        <div class="row">
+          <label>外壁断熱材</label>
+          <select id="insul_wall" onchange="UI.toggle('insul_wall'); Calc.exec();">
+            <option value="0">なし</option>
+            <option value="70" selected>あり (70 N/㎡)</option>
+            <option value="gw16">GW16K</option>
+            <option value="gw24">GW24K</option>
+            <option value="uf14">吹付ウレタン14K</option>
+            <option value="cf55">セルロースファイバー55K</option>
+            <option value="custom">任意入力</option>
+          </select>
+        </div>
+        <div id="pnl_insul_wall" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="row"><label>外壁断熱① 密度 (kg/m³)</label><input type="number" id="insul_wall_density1" value="16" step="1" min="0" onchange="Calc.exec()"></div>
+          <div class="row"><label>外壁断熱① 厚さ (mm)</label><input type="number" id="insul_wall_thick1" value="100" step="1" min="0" onchange="Calc.exec()"></div>
+          <div class="row"><label>外壁断熱② 密度 (kg/m³)</label><input type="number" id="insul_wall_density2" value="0" step="1" min="0" onchange="Calc.exec()"></div>
+          <div class="row"><label>外壁断熱② 厚さ (mm)</label><input type="number" id="insul_wall_thick2" value="0" step="1" min="0" onchange="Calc.exec()"></div>
+        </div>
+
+        <div class="row">
+          <label>多雪区域</label>
+          <select id="is_heavy_snow" onchange="UI.toggle('snow'); Calc.exec();">
+            <option value="no">非該当</option>
+            <option value="yes">多雪区域</option>
+          </select>
+        </div>
+        <div id="pnl_snow" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="row"><label>最深積雪量 (cm)</label><input type="number" id="val_snow_d" value="100" onchange="Calc.exec()"></div>
+          <div class="row"><label>積雪単位荷重 (N/㎡/cm)</label><input type="number" id="val_snow_w" value="30" onchange="Calc.exec()"></div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="row"><label>屋根勾配(寸)</label><input type="number" id="kobai" value="4" onchange="Calc.exec()"></div>
+          <div class="row"><label>屋根勾配 (/10)</label><input type="number" id="kobai" value="4" step="0.5" onchange="Calc.exec()"></div>
           <div class="row"><label>軒の出 (m)</label><input type="number" id="noki" value="0.6" step="0.1" onchange="Calc.exec()"></div>
         </div>
       </div>
@@ -882,6 +946,27 @@ const DB_SOURCE = {
 };
 const WALL_TABLE = [ {name:'土塗り壁等',base:1000}, {name:'モルタル等',base:890}, {name:'サイディング',base:600}, {name:'金属板張',base:500}, {name:'下見板張',base:350} ];
 
+/* ===== 用途別 床積載荷重（地震用 / 短期 / 長期） N/㎡ ===== */
+const USAGE_LIVE_LOAD_MAP = {
+  res:       { load: 600,  label: '住宅' },
+  office:    { load: 800,  label: '事務所' },
+  classroom: { load: 1100, label: '教室' },
+  shop:      { load: 1300, label: '店舗' },
+  assembly:  { load: 2100, label: '集会場' },
+  warehouse: { load: 3900, label: '倉庫' }
+};
+/* 柱小径計算用の長期積載荷重 */
+const USAGE_LONG_LIVE_LOAD_MAP = {
+  res:       1300,
+  office:    1800,
+  classroom: 2100,
+  shop:      2900,
+  assembly:  2900,
+  warehouse: 3900
+};
+/* 既製品断熱材の標準密度 (kg/m³) */
+const INSUL_DENSITY_MAP = { gw16: 16, gw24: 24, uf14: 14, cf55: 55 };
+
 /* ===== 耐力壁仕様データ（告示1100号 R7.4.1） ===== */
 const SPEC_DATA_OKABE = [
   {name:"構造用パーティクルボード", nail:"N50 又は NZ50", p1:75, p2:150, ratio:4.3},
@@ -1018,7 +1103,7 @@ const Log = {
     const box=document.getElementById('calc_log'); 
     box.innerHTML = '<h3>計算詳細ログ</h3>' + this.lines.map(l=>{ 
       if(l.t==='h') {
-        const needsBreak = (typeof l.h === 'string') && l.h.startsWith('6. 必要壁量の決定');
+        const needsBreak = (typeof l.h === 'string') && l.h.startsWith('7. 必要壁量の決定');
         return `${needsBreak ? '<div class="pdf-page-break"></div>' : ''}<h4>${l.h}</h4>`;
       }
       return `<div class="log-row">
@@ -1055,14 +1140,38 @@ const Calc = {
 
     // 2. Unit Loads (Roof)
     const w_roof_mat = val('mat_roof');
-    const w_roof_insul = 100; // 天井断熱材固定値
+
+    // 天井断熱材 (固定 / 既製品 / 任意密度・厚さ)
+    const insul_ceil_sel = document.getElementById('insul_ceiling').value;
+    let w_roof_insul = 0;
+    let insul_ceil_desc = "なし";
+    if(insul_ceil_sel === 'custom' || INSUL_DENSITY_MAP[insul_ceil_sel] !== undefined){
+      const dens = val('insul_ceiling_density');
+      const thick = val('insul_ceiling_thick');
+      w_roof_insul = dens * (thick / 1000) * 9.81;
+      insul_ceil_desc = `${dens} kg/m³ × ${thick} mm = ${w_roof_insul.toFixed(1)} N/㎡`;
+    } else {
+      w_roof_insul = parseFloat(insul_ceil_sel) || 0;
+      insul_ceil_desc = w_roof_insul > 0 ? `${w_roof_insul} N/㎡` : "なし";
+    }
+
+    // 太陽光設備 (固定 / 任意質量)
     const solar_mode = document.getElementById('mat_solar').value;
-    const w_solar_surf = (solar_mode === '200') ? 200 : 0;
+    let w_solar_surf = 0;
+    if(solar_mode === 'custom'){
+      const massKg = val('solar_mass');
+      const topArea = (stories===2) ? (area2 || area1) : area1;
+      w_solar_surf = (massKg > 0 && topArea > 0) ? (massKg * 9.81) / topArea : 0;
+    } else {
+      w_solar_surf = parseFloat(solar_mode) || 0;
+    }
+
     const Gr = (w_roof_mat + w_solar_surf) * roof_multiplier + w_roof_insul;
 
     Log.header("2. 屋根荷重の算定 (単位 N/㎡)");
     Log.add("屋根材+太陽光", (w_roof_mat+w_solar_surf).toFixed(1), `${w_roof_mat}+${w_solar_surf.toFixed(1)}`, "");
-    Log.add("屋根荷重(Gr)", Gr.toFixed(1), `(${w_roof_mat}+${w_solar_surf.toFixed(1)})×${roof_multiplier.toFixed(4)} + ${w_roof_insul}`, "");
+    Log.add("天井断熱材", w_roof_insul.toFixed(1), insul_ceil_desc, "N/㎡");
+    Log.add("屋根荷重(Gr)", Gr.toFixed(1), `(${w_roof_mat}+${w_solar_surf.toFixed(1)})×${roof_multiplier.toFixed(4)} + ${w_roof_insul.toFixed(1)}`, "");
 
     // Snow
     let Ms = 0;
@@ -1076,8 +1185,29 @@ const Calc = {
 
     // 3. Wall Loads
     const w_wall_mat_base = WALL_TABLE.find(r=>r.name===document.getElementById('mat_wall').value).base;
-    const w_wall_ins_base = 70; // 固定値
-    const w_window_base = 400; 
+
+    // 外壁断熱材 (固定 / 既製品 / 任意密度・厚さ 2層対応)
+    const insul_wall_sel = document.getElementById('insul_wall').value;
+    let w_wall_ins_base = 0;
+    let insul_wall_desc = "なし";
+    if(insul_wall_sel === 'custom' || INSUL_DENSITY_MAP[insul_wall_sel] !== undefined){
+      const dens1 = val('insul_wall_density1');
+      const thick1 = val('insul_wall_thick1');
+      const dens2 = val('insul_wall_density2');
+      const thick2 = val('insul_wall_thick2');
+      const w1 = dens1 * (thick1 / 1000) * 9.81;
+      const w2 = dens2 * (thick2 / 1000) * 9.81;
+      w_wall_ins_base = w1 + w2;
+      if(w2 > 0){
+        insul_wall_desc = `①${dens1}×${thick1}mm=${w1.toFixed(1)} + ②${dens2}×${thick2}mm=${w2.toFixed(1)} = ${w_wall_ins_base.toFixed(1)} N/㎡`;
+      } else {
+        insul_wall_desc = `${dens1} kg/m³ × ${thick1} mm = ${w_wall_ins_base.toFixed(1)} N/㎡`;
+      }
+    } else {
+      w_wall_ins_base = parseFloat(insul_wall_sel) || 0;
+      insul_wall_desc = w_wall_ins_base > 0 ? `${w_wall_ins_base} N/㎡` : "なし";
+    }
+    const w_window_base = 400;
 
     const calcOuter = (h) => {
       const perimeter_h = (6*h*2) + (16.5*h*2);
@@ -1092,6 +1222,7 @@ const Calc = {
     const calcInner = (h) => (200 * h / 2.8);
 
     Log.header("3. 壁荷重の算定 (階高毎計算)");
+    Log.add("外壁断熱材", w_wall_ins_base.toFixed(1), insul_wall_desc, "N/㎡");
     let w_wall_2 = 0, w_out2 = 0, w_in2 = 0;
     if(stories===2){
       const out2 = calcOuter(h2);
@@ -1113,18 +1244,27 @@ const Calc = {
 
     // 4. Seismic Weight
     const usage = document.getElementById('usage').value;
-    const w_floor_seismic = (usage==='res') ? (610+600) : (610+800);
-    
+    const usageInfo = USAGE_LIVE_LOAD_MAP[usage] || { label: usage, load: val('floor_live') };
+    const w_floor_dead = val('floor_dead') || 610;
+    const w_floor_live = val('floor_live') || usageInfo.load;
+    const w_floor_seismic = w_floor_dead + w_floor_live;
+
+    Log.header("4. 床荷重の算定 (N/㎡)");
+    Log.add("床固定荷重", w_floor_dead.toFixed(0), "", "自重+仕上等");
+    Log.add("床積載荷重", w_floor_live.toFixed(0), "", `用途: ${usageInfo.label}`);
+    Log.add("床荷重合計(Gf)", w_floor_seismic.toFixed(0), `${w_floor_dead} + ${w_floor_live}`, "N/㎡");
+
     let W2=0, W1=0, Ai2=1.0;
     const roof_load = Gr + Ms;
-    
-    Log.header("4. 地震用重量(ΣW)と必要壁量(Lw)");
-    
+
+    Log.header("5. 地震用重量(ΣW)と必要壁量(Lw)");
+
     const Z = (grade>1) ? parseFloat(document.getElementById('z_val').value) : 1.0;
     const gf = (grade===2)?1.25 : (grade===3)?1.5 : 1.0;
-    
+    const C0 = val('c0') || 0.2;
+
     let req_lw1 = 0, req_lw2 = 0;
-    
+
     if(stories===2){
       W2 = (roof_load * area2) + (0.5 * w_wall_2 * area2);
       W1 = (w_floor_seismic * area2) + (0.5 * w_wall_2 * area2) + (0.5 * w_wall_1 * area1) + (roof_load * Math.max(0, area1-area2));
@@ -1136,10 +1276,9 @@ const Calc = {
       // Ai
       const H_total = 0.5 + val('roof_h')/2 + h2 + h1 + 0.5;
       const T = 0.03 * H_total;
-      const alpha = W2 / (W1+W2); 
+      const alpha = W2 / (W1+W2);
       Ai2 = 1 + ((1/Math.sqrt(alpha)) - alpha) * (2*T)/(1+3*T);
-      const C0 = 0.2;
-      
+
       const force2 = W2_kN * Z * Ai2 * C0 * gf;
       req_lw2 = ((force2 / 1.96) * 100) / area2;
       const force1 = (W1_kN + W2_kN) * Z * 1.0 * C0 * gf;
@@ -1155,17 +1294,17 @@ const Calc = {
     } else {
       W1 = (roof_load * area1) + (0.5 * w_wall_1 * area1);
       const W1_kN = W1/1000;
-      const force1 = W1_kN * Z * 1.0 * 0.2 * gf;
+      const force1 = W1_kN * Z * 1.0 * C0 * gf;
       req_lw1 = ((force1 / 1.96) * 100) / area1;
       Log.add("1階重量 ΣW1", W1_kN.toFixed(2)+" kN", `(屋根+0.5×壁1)×A1`, "");
       Log.add("1階 地震必要壁量", Math.ceil(req_lw1)+" cm/㎡", "", "");
-      
+
       this.results.W1 = W1_kN;
       this.results.W2 = 0;
       this.results.Ai2 = 1.0;
     }
 
-    // 5. 風圧力の検討
+    // 6. 風圧力の検討
     const Cw = val('wind_coeff');
     const wx1_area = val('wind_aw_x1') + (stories===2 ? val('wind_aw_x2') : 0);
     const wy1_area = val('wind_aw_y1') + (stories===2 ? val('wind_aw_y2') : 0);
@@ -1178,7 +1317,7 @@ const Calc = {
     const wx2 = wx2_area * Cw;
     const wy2 = wy2_area * Cw;
     
-    Log.header("5. 風圧力の検討");
+    Log.header("6. 風圧力の検討");
     Log.add("風圧力係数 Cw", Cw, "", "");
     Log.add("1階 X方向 見付面積", wx1_area.toFixed(1)+"㎡", stories===2?`${val('wind_aw_x1')}+${val('wind_aw_x2')}`:`${val('wind_aw_x1')}`, "");
     Log.add("1階 X方向 風圧必要壁量", wx1.toFixed(1)+" cm", `${wx1_area.toFixed(1)}×${Cw}`, "見付面積×係数(cm/㎡)");
@@ -1196,7 +1335,7 @@ const Calc = {
     const req_seismic_1 = Math.ceil(req_lw1) * area1;
     const req_seismic_2 = Math.ceil(req_lw2) * area2;
     
-    Log.header("6. 必要壁量の決定 (地震 vs 風圧)");
+    Log.header("7. 必要壁量の決定 (地震 vs 風圧)");
     
     // 1階
     const decide_1x = Math.max(req_seismic_1, wx1);
@@ -1265,9 +1404,12 @@ const Calc = {
     const w_w1 = (pos==='outer') ? (w_out1 + w_in1) : w_in1;
     
     // Column Floor Load (Live+Dead) - differs from Seismic
-    const w_floor_col = (usage==='res') ? (610+1300) : (610+1800);
+    // 柱長期荷重には用途別の長期積載荷重(住宅 1300 / 事務所 1800 / 教室 2100 / 店舗 2900 / 集会場 2900 / 倉庫 3900)を使用
+    const w_floor_dead_col = val('floor_dead') || 610;
+    const colLongLive = (USAGE_LONG_LIVE_LOAD_MAP[usage] !== undefined) ? USAGE_LONG_LIVE_LOAD_MAP[usage] : 1300;
+    const w_floor_col = w_floor_dead_col + colLongLive;
 
-    Log.header("7. 柱の小径算定 (長期荷重)");
+    Log.header("8. 柱の小径算定 (長期荷重)");
     let Wd = 0;
     let formula_str = "";
     
@@ -1727,8 +1869,8 @@ const WallCheck = {
 
 /* ===== Init ===== */
 Mat.init();
-const UI = { update:()=>{ 
-   const is2F=(document.getElementById('stories').value==='2'); 
+const UI = { update:()=>{
+   const is2F=(document.getElementById('stories').value==='2');
    document.getElementById('grp_h2').style.display=is2F?'block':'none';
    document.getElementById('grp_area2').style.display=is2F?'block':'none';
    const windPanel = document.getElementById('grp_wind_2f');
@@ -1736,11 +1878,54 @@ const UI = { update:()=>{
    document.getElementById('res_card_2f').style.display=is2F?'block':'none';
    document.getElementById('wc_area_2f').style.display=is2F?'block':'none';
    document.getElementById('opt_col_2f').disabled=!is2F;
+   // 各種任意入力パネルの初期表示同期
+   UI.toggle('snow');
+   UI.toggle('solar');
+   UI.toggle('insul_ceiling');
+   UI.toggle('insul_wall');
 }, toggle:(type)=>{
    if(type === 'snow') {
       const isSnow = document.getElementById('is_heavy_snow').value === 'yes';
-      document.getElementById('pnl_snow').style.display = isSnow ? 'grid' : 'none';
+      const pnl = document.getElementById('pnl_snow');
+      if(pnl) pnl.style.display = isSnow ? 'grid' : 'none';
    }
+   if(type === 'solar') {
+      const sel = document.getElementById('mat_solar');
+      const grp = document.getElementById('grp_solar_mass');
+      if(sel && grp) grp.style.display = (sel.value === 'custom') ? 'block' : 'none';
+   }
+   if(type === 'insul_ceiling') {
+      const sel = document.getElementById('insul_ceiling');
+      const grp = document.getElementById('pnl_insul_ceiling');
+      if(!sel || !grp) return;
+      const v = sel.value;
+      const showCustom = (v === 'custom' || INSUL_DENSITY_MAP[v] !== undefined);
+      grp.style.display = showCustom ? 'grid' : 'none';
+      if(INSUL_DENSITY_MAP[v] !== undefined){
+        const densEl = document.getElementById('insul_ceiling_density');
+        if(densEl) densEl.value = INSUL_DENSITY_MAP[v];
+      }
+   }
+   if(type === 'insul_wall') {
+      const sel = document.getElementById('insul_wall');
+      const grp = document.getElementById('pnl_insul_wall');
+      if(!sel || !grp) return;
+      const v = sel.value;
+      const showCustom = (v === 'custom' || INSUL_DENSITY_MAP[v] !== undefined);
+      grp.style.display = showCustom ? 'grid' : 'none';
+      if(INSUL_DENSITY_MAP[v] !== undefined){
+        const densEl = document.getElementById('insul_wall_density1');
+        if(densEl) densEl.value = INSUL_DENSITY_MAP[v];
+      }
+   }
+}, onUsageChange:()=>{
+   const usage = document.getElementById('usage').value;
+   const info = USAGE_LIVE_LOAD_MAP[usage];
+   if(!info) return;
+   const inp = document.getElementById('floor_live');
+   if(inp) inp.value = info.load;
+   const note = document.getElementById('floor_live_auto_note');
+   if(note) note.textContent = `※${info.label}: ${info.load} N/㎡`;
 } };
 UI.update();
 window.onload = function(){
