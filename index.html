@@ -35,6 +35,12 @@ input[type=number],select,input[type=text]{width:100%;padding:8px;border:1px sol
 .detail-box{background:#2c3e50;color:#ecf0f1;padding:16px;border-radius:8px;margin-top:30px;font-family:'Courier New', monospace;font-size:0.85rem;line-height:1.4;}
 .detail-box h3 {border-bottom:1px solid #95a5a6; padding-bottom:5px; margin-top:0; color:#fff;}
 .detail-box h4{color:#f1c40f;margin:15px 0 5px 0;border-left:4px solid #f1c40f;padding-left:8px;}
+.detail-box-wrap > summary { list-style:none; cursor:pointer; background:#2c3e50; color:#ecf0f1; padding:10px 16px; border-radius:8px; font-family:'Courier New',monospace; font-size:0.85rem; font-weight:bold; user-select:none; margin-top:30px; }
+.detail-box-wrap > summary::-webkit-details-marker { display:none; }
+.detail-box-wrap > summary::before { content:'▶ '; font-size:0.8em; }
+.detail-box-wrap[open] > summary::before { content:'▼ '; }
+.detail-box-wrap { margin-top:0; }
+.detail-box-wrap > .detail-box { margin-top:0; border-radius:0 0 8px 8px; }
 .log-row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);padding:4px 0;}
 .log-key{color:#bdc3c7; flex:1;}
 .log-val{color:#2ecc71;font-weight:700; text-align:right;}
@@ -750,7 +756,10 @@ table.ext-case-table .res-ng { color: #c0392b; font-weight: 700; }
 
 
   <div class="pdf-break"></div>
-  <div class="detail-box" id="calc_log"></div>
+  <details class="detail-box-wrap">
+    <summary>詳細計算ログ（クリックで展開）</summary>
+    <div class="detail-box" id="calc_log"></div>
+  </details>
   <div class="footer-link-box">
     <a href="https://www.howtec.or.jp/publics/index/441/" target="_blank">参考資料：壁量等の基準（令和７年施行）設計支援ツール</a>
   </div>
@@ -1491,13 +1500,36 @@ const Calc = {
       
       this.results.req_2x = Math.ceil(decide_2x);
       this.results.req_2y = Math.ceil(decide_2y);
+      this.results.wind_area_x2 = wx2_area;
+      this.results.wind_area_y2 = wy2_area;
+      this.results.wind_req_2x = wx2;
+      this.results.wind_req_2y = wy2;
+      this.results.seismic_req_2 = req_seismic_2;
+      this.results.gov_2x = gov_2x;
+      this.results.gov_2y = gov_2y;
     } else {
       this.results.req_2x = 0;
       this.results.req_2y = 0;
+      this.results.wind_area_x2 = 0;
+      this.results.wind_area_y2 = 0;
+      this.results.wind_req_2x = 0;
+      this.results.wind_req_2y = 0;
+      this.results.seismic_req_2 = 0;
+      this.results.gov_2x = '-';
+      this.results.gov_2y = '-';
     }
     
     this.results.lw1 = Math.ceil(req_lw1);
     this.results.lw2 = Math.ceil(req_lw2);
+    this.results.wind_enabled = document.getElementById('chk_wind_check').checked;
+    this.results.Cw = Cw;
+    this.results.wind_area_x1 = wx1_area;
+    this.results.wind_area_y1 = wy1_area;
+    this.results.wind_req_1x = wx1;
+    this.results.wind_req_1y = wy1;
+    this.results.seismic_req_1 = req_seismic_1;
+    this.results.gov_1x = gov_1x;
+    this.results.gov_1y = gov_1y;
 
     // Step 1 画面表示更新 (cm/㎡とΣW)
     txt('disp_lw1', Math.ceil(req_lw1));
@@ -2991,19 +3023,52 @@ function _buildWallSection() {
   const r = Calc.results || {};
   const stories = parseInt((document.getElementById('stories')||{}).value) || 1;
   let html = '<h3>必要壁量の算出</h3>';
+
+  // --- 地震用重量・層せん断力 ---
+  html += '<h4 style="font-size:10pt;margin:4mm 0 1mm;color:#2c3e50;">① 地震用重量・必要壁量</h4>';
   html += '<table><thead><tr><th class="l">項目</th><th class="l">値</th></tr></thead><tbody>';
   if (typeof r.W1 === 'number') html += '<tr><td class="l">1階 地震用重量 ΣW1</td><td class="l">'+r.W1.toFixed(2)+' kN</td></tr>';
   if (typeof r.W2 === 'number' && stories===2) html += '<tr><td class="l">2階 地震用重量 ΣW2</td><td class="l">'+r.W2.toFixed(2)+' kN</td></tr>';
   if (typeof r.Ai2 === 'number' && stories===2) html += '<tr><td class="l">Ai2 (2階層せん断力係数)</td><td class="l">'+r.Ai2.toFixed(3)+'</td></tr>';
-  html += '<tr><td class="l">1階 必要壁量 cm/㎡</td><td class="l">'+(r.lw1||0)+'</td></tr>';
-  if (stories===2) html += '<tr><td class="l">2階 必要壁量 cm/㎡</td><td class="l">'+(r.lw2||0)+'</td></tr>';
-  html += '<tr><td class="l">1階 X 方向 必要壁量(総量)</td><td class="l">'+(r.req_1x||0)+' cm</td></tr>';
-  html += '<tr><td class="l">1階 Y 方向 必要壁量(総量)</td><td class="l">'+(r.req_1y||0)+' cm</td></tr>';
-  if (stories===2) {
-    html += '<tr><td class="l">2階 X 方向 必要壁量(総量)</td><td class="l">'+(r.req_2x||0)+' cm</td></tr>';
-    html += '<tr><td class="l">2階 Y 方向 必要壁量(総量)</td><td class="l">'+(r.req_2y||0)+' cm</td></tr>';
-  }
+  html += '<tr><td class="l">1階 地震必要壁量 (単位)</td><td class="l">'+(r.lw1||0)+' cm/㎡</td></tr>';
+  if (stories===2) html += '<tr><td class="l">2階 地震必要壁量 (単位)</td><td class="l">'+(r.lw2||0)+' cm/㎡</td></tr>';
+  html += '<tr><td class="l">1階 地震必要壁量 (総量)</td><td class="l">'+(r.seismic_req_1||0).toFixed(0)+' cm</td></tr>';
+  if (stories===2) html += '<tr><td class="l">2階 地震必要壁量 (総量)</td><td class="l">'+(r.seismic_req_2||0).toFixed(0)+' cm</td></tr>';
   html += '</tbody></table>';
+
+  // --- 風圧力（チェック時のみ） ---
+  if (r.wind_enabled) {
+    html += '<h4 style="font-size:10pt;margin:4mm 0 1mm;color:#2c3e50;">② 風圧力の検討</h4>';
+    html += '<table><thead><tr><th class="l">項目</th><th class="l">値</th></tr></thead><tbody>';
+    html += '<tr><td class="l">風圧力係数 Cw</td><td class="l">'+(r.Cw||0)+' cm/㎡</td></tr>';
+    if (stories===2) {
+      html += '<tr><td class="l">1階 見付面積 X方向 (1F+2F)</td><td class="l">'+(r.wind_area_x1||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">1階 見付面積 Y方向 (1F+2F)</td><td class="l">'+(r.wind_area_y1||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">2階 見付面積 X方向</td><td class="l">'+(r.wind_area_x2||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">2階 見付面積 Y方向</td><td class="l">'+(r.wind_area_y2||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">1階 風圧必要壁量 X方向</td><td class="l">'+(r.wind_req_1x||0).toFixed(1)+' cm</td></tr>';
+      html += '<tr><td class="l">1階 風圧必要壁量 Y方向</td><td class="l">'+(r.wind_req_1y||0).toFixed(1)+' cm</td></tr>';
+      html += '<tr><td class="l">2階 風圧必要壁量 X方向</td><td class="l">'+(r.wind_req_2x||0).toFixed(1)+' cm</td></tr>';
+      html += '<tr><td class="l">2階 風圧必要壁量 Y方向</td><td class="l">'+(r.wind_req_2y||0).toFixed(1)+' cm</td></tr>';
+    } else {
+      html += '<tr><td class="l">1階 見付面積 X方向</td><td class="l">'+(r.wind_area_x1||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">1階 見付面積 Y方向</td><td class="l">'+(r.wind_area_y1||0).toFixed(1)+' ㎡</td></tr>';
+      html += '<tr><td class="l">1階 風圧必要壁量 X方向</td><td class="l">'+(r.wind_req_1x||0).toFixed(1)+' cm</td></tr>';
+      html += '<tr><td class="l">1階 風圧必要壁量 Y方向</td><td class="l">'+(r.wind_req_1y||0).toFixed(1)+' cm</td></tr>';
+    }
+    html += '</tbody></table>';
+
+    // --- 地震・風圧の比較と決定壁量 ---
+    html += '<h4 style="font-size:10pt;margin:4mm 0 1mm;color:#2c3e50;">③ 必要壁量の決定 (地震 vs 風圧)</h4>';
+    html += '<table><thead><tr><th class="l">階・方向</th><th>地震必要壁量(cm)</th><th>風圧必要壁量(cm)</th><th>決定値(cm)</th><th>支配</th></tr></thead><tbody>';
+    html += '<tr><td class="l">1階 X方向</td><td>'+(r.seismic_req_1||0).toFixed(0)+'</td><td>'+(r.wind_req_1x||0).toFixed(1)+'</td><td><b>'+(r.req_1x||0)+'</b></td><td>'+(r.gov_1x||'-')+'</td></tr>';
+    html += '<tr><td class="l">1階 Y方向</td><td>'+(r.seismic_req_1||0).toFixed(0)+'</td><td>'+(r.wind_req_1y||0).toFixed(1)+'</td><td><b>'+(r.req_1y||0)+'</b></td><td>'+(r.gov_1y||'-')+'</td></tr>';
+    if (stories===2) {
+      html += '<tr><td class="l">2階 X方向</td><td>'+(r.seismic_req_2||0).toFixed(0)+'</td><td>'+(r.wind_req_2x||0).toFixed(1)+'</td><td><b>'+(r.req_2x||0)+'</b></td><td>'+(r.gov_2x||'-')+'</td></tr>';
+      html += '<tr><td class="l">2階 Y方向</td><td>'+(r.seismic_req_2||0).toFixed(0)+'</td><td>'+(r.wind_req_2y||0).toFixed(1)+'</td><td><b>'+(r.req_2y||0)+'</b></td><td>'+(r.gov_2y||'-')+'</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
   return html;
 }
 
@@ -3047,8 +3112,9 @@ function _buildWallCheckSection() {
     html += '</tbody></table>';
   });
 
-  // 四分割法
-  if (document.getElementById('chk_4div_check') && document.getElementById('chk_4div_check').checked) {
+  // 四分割法（チェック時のみ）
+  const chk4El = document.getElementById('chk_4div_check');
+  if (chk4El && chk4El.checked) {
     html += '<h3>四分割法 バランス検討</h3>';
     [['1f','1F'],['2f','2F']].forEach(([fl, lbl]) => {
       if (fl==='2f' && stories!==2) return;
@@ -3095,7 +3161,10 @@ function _buildCaseBody(c, idx, total) {
   const isColumnOnly = (c.caseType === 'column');
   // 柱断面のみケースは壁量関連の出力をスキップし、柱情報のみを 1 ページに集約
   if (isColumnOnly) {
-    let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+' 柱断面: '+_escHtml(c.name||'')+'">';
+    const keys = [];
+    if (_opt('rep_input')) keys.push('input');
+    if (_opt('rep_column')) keys.push('column');
+    let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+' 柱断面: '+_escHtml(c.name||'')+'" data-toc-keys="'+keys.join(',')+'">';
     html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+_escHtml(c.name||'')+' <small style="font-weight:normal;color:#666;">(柱断面のみ)</small></h2>';
     if (_opt('rep_input'))  html += _buildColumnInputTable();
     if (_opt('rep_column')) html += _buildColumnSection();
@@ -3103,20 +3172,23 @@ function _buildCaseBody(c, idx, total) {
     return html;
   }
 
-  let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+': '+_escHtml(c.name||'')+'">';
+  const keysMain = [];
+  if (_opt('rep_input')) keysMain.push('input');
+  if (_opt('rep_wall')) keysMain.push('wall');
+  let html = '<div class="report-page" data-toc-id="case-'+(idx+1)+'" data-toc-label="ケース '+(idx+1)+': '+_escHtml(c.name||'')+'" data-toc-keys="'+keysMain.join(',')+'">';
   html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+_escHtml(c.name||'')+'</h2>';
   if (_opt('rep_input'))     html += _buildInputTableForReport();
   if (_opt('rep_wall'))      html += _buildWallSection();
   html += '<div class="page-number"></div></div>';
 
   if (_opt('rep_wallcheck')) {
-    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-wc" data-toc-label="ケース '+(idx+1)+' 壁量／バランス">';
+    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-wc" data-toc-label="ケース '+(idx+1)+' 壁量／バランス" data-toc-keys="wallcheck">';
     html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'壁量／バランス検討</h2>';
     html += _buildWallCheckSection();
     html += '<div class="page-number"></div></div>';
   }
   if (_opt('rep_column')) {
-    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-col" data-toc-label="ケース '+(idx+1)+' 柱の断面算定">';
+    html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-col" data-toc-label="ケース '+(idx+1)+' 柱の断面算定" data-toc-keys="column">';
     html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'柱の断面算定</h2>';
     html += _buildColumnSection();
     html += '<div class="page-number"></div></div>';
@@ -3124,7 +3196,7 @@ function _buildCaseBody(c, idx, total) {
   if (_opt('rep_calc_log')) {
     const logEl = document.getElementById('calc_log');
     if (logEl && logEl.textContent.trim()) {
-      html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-log" data-toc-label="ケース '+(idx+1)+' 詳細計算ログ">';
+      html += '<div class="report-page" data-toc-id="case-'+(idx+1)+'-log" data-toc-label="ケース '+(idx+1)+' 詳細計算ログ" data-toc-keys="calc_log">';
       html += '<h2>'+(total>1?'[ケース '+(idx+1)+'] ':'')+'詳細計算ログ</h2>';
       html += '<div class="report-log">'+logEl.innerHTML+'</div>';
       html += '<div class="page-number"></div></div>';
@@ -3167,7 +3239,7 @@ function _buildColumnInputTable() {
 
 function _buildCoverPage(caseList) {
   const today = new Date().toLocaleString('ja-JP');
-  let html = '<div class="report-page rp-cover" id="rp-cover"><div style="margin-top:60mm;">';
+  let html = '<div class="report-page report-frontmatter rp-cover" id="rp-cover" data-page-number-exclude="1" data-toc-keys="cover"><div style="margin-top:60mm;">';
   html += '<h1 style="font-size:22pt; text-align:center; border:none; margin-bottom:6mm;">木造軸組み工法</h1>';
   html += '<h1 style="font-size:18pt; text-align:center; border:none; margin-bottom:14mm;">壁量・バランス・柱の断面算定<br>計算書</h1>';
   html += '<p style="text-align:center; font-size:11pt; color:#555; margin-top:8mm;">令和7年基準・地震／風圧・四分割対応</p>';
@@ -3181,14 +3253,14 @@ function _buildCoverPage(caseList) {
   return html;
 }
 function _buildTOCPage() {
-  return '<div class="report-page rp-toc" id="rp-toc">'
+  return '<div class="report-page report-frontmatter rp-toc" id="rp-toc" data-page-number-exclude="1" data-toc-keys="toc">'
        + '<h1>目　次</h1>'
        + '<div id="toc-content" style="margin-top:8mm; font-size:11pt; line-height:2.2;">(計算中...)</div>'
        + '</div>';
 }
 function _buildCaseListPage(caseList) {
   if (!caseList.length) return '';
-  let html = '<div class="report-page" data-toc-id="case-list" data-toc-label="保存済みケース一覧">';
+  let html = '<div class="report-page" data-toc-id="case-list" data-toc-label="保存済みケース一覧" data-toc-keys="caseList">';
   html += '<h2>保存済みケース一覧</h2>';
   html += '<table><thead><tr><th>No</th><th class="l">ケース名</th><th>種別</th><th>階数</th><th>1F 必要壁量<br>X / Y</th><th>2F 必要壁量<br>X / Y</th><th>柱判定</th><th>総合</th></tr></thead><tbody>';
   caseList.forEach((c, i) => {
@@ -3212,7 +3284,7 @@ function _buildFormulasPage() {
   if (!logicEl) return '';
   const formulas = logicEl.querySelectorAll('.ext-formula');
   if (!formulas.length) return '';
-  let html = '<div class="report-page" data-toc-id="formulas" data-toc-label="使用式一覧"><h2>使用式一覧</h2>';
+  let html = '<div class="report-page" data-toc-id="formulas" data-toc-label="使用式一覧" data-toc-keys="formulas"><h2>使用式一覧</h2>';
   formulas.forEach((f, idx) => {
     html += '<div class="formula"><b>('+(idx+1)+')</b> '+f.innerHTML+'</div>';
   });
@@ -3252,7 +3324,7 @@ function _buildLogicPages() {
     let lbl;
     if (fH3 === lH3) lbl = fH3 ? fH3.textContent.replace(/\s+/g,' ').trim() : '計算ロジック '+(gi+1);
     else lbl = (fH3?fH3.textContent.replace(/\s+/g,' ').trim():'') + ' / ' + (lH3?lH3.textContent.replace(/\s+/g,' ').trim():'');
-    html += '<div class="report-page" data-toc-id="'+tocId+'" data-toc-label="'+_escHtml(lbl)+'">';
+    html += '<div class="report-page" data-toc-id="'+tocId+'" data-toc-label="'+_escHtml(lbl)+'" data-toc-keys="logic">';
     if (gi === 0) html += '<h2>計算ロジック詳細解説</h2>';
     grp.forEach(section => section.forEach(el => { html += el.outerHTML; }));
     html += '<div class="page-number"></div></div>';
@@ -3262,14 +3334,17 @@ function _buildLogicPages() {
 
 function generateReport() {
   const css = ''
-    + '@page { size: A4; margin: 0; }\n'
+    + '@page { size: A4 portrait; margin: 18mm 18mm 24mm 18mm; }\n'
     + 'html, body { margin: 0; padding: 0; }\n'
     + 'body { font-family: "Yu Gothic","Meiryo","Hiragino Kaku Gothic ProN",sans-serif; color:#222; font-size: 10.5pt; line-height: 1.6; background:#dadee5; }\n'
-    + '.report-page { width: 210mm; min-height: 297mm; padding: 18mm 18mm 24mm 18mm; box-sizing: border-box; '
-    + '  position: relative; background: white; margin: 0 auto 6mm; page-break-after: always; break-after: page; }\n'
+    + 'body.report-building { visibility: hidden; }\n'
+    + 'body.report-ready { visibility: visible; }\n'
+    + '.report-page { width: 210mm; height: 297mm; padding: 18mm 18mm 24mm 18mm; box-sizing: border-box; '
+    + '  position: relative; overflow: hidden; background: white; margin: 0 auto 6mm; page-break-after: always; break-after: page; }\n'
     + '.report-page:last-child { page-break-after: auto; break-after: auto; }\n'
     + '@media print { body { background: white; padding: 0; margin: 0; }\n'
-    + '  .report-page { margin: 0 !important; box-shadow: none !important; padding: 18mm 18mm 24mm 18mm; }\n'
+    + '  .report-page { width: 100% !important; height: 255mm !important; min-height: 255mm !important; margin: 0 !important; box-shadow: none !important; padding: 0 !important; overflow: hidden !important; }\n'
+    + '  .page-number { bottom: 2mm !important; }\n'
     + '  .no-print { display: none !important; } }\n'
     + '@media screen { body { padding: 6mm 0; } .report-page { box-shadow: 0 2px 8px rgba(0,0,0,0.18); }\n'
     + '  .toolbar { position: sticky; top: 0; background: #2c3e50; color:#fff; padding: 8px 16px; z-index:100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 8mm; }\n'
@@ -3298,7 +3373,8 @@ function generateReport() {
     + '.report-log .log-key { color:#444; }\n'
     + '.report-log .log-formula { color:#555; font-family: Consolas,monospace; font-size:8.5pt; }\n'
     + '.report-log .log-val { font-family: Consolas,monospace; color:#111; font-weight:bold; }\n'
-    + '.report-log .log-note { color:#777; font-size:8pt; }\n';
+    + '.report-log .log-note { color:#777; font-size:8pt; }\n'
+    + '.page-number { background: rgba(255,255,255,0.92); }\n';
 
   const scope = (document.querySelector('input[name="rep_scope"]:checked')||{}).value || 'current';
   const savedState = collectCurrentState();
@@ -3331,30 +3407,194 @@ function generateReport() {
   if (_opt('rep_formulas')) body += _buildFormulasPage();
   if (_opt('rep_logic'))    body += _buildLogicPages();
 
+  const tocMetaJson = JSON.stringify([
+    { key:'cover',    label:'表紙・概要',           enabled:_opt('rep_cover'),    numbered:false },
+    { key:'toc',      label:'目次',                 enabled:_opt('rep_toc'),      numbered:false },
+    { key:'input',    label:'入力諸元',             enabled:_opt('rep_input'),    numbered:true },
+    { key:'wall',     label:'必要壁量の算出',       enabled:_opt('rep_wall'),     numbered:true },
+    { key:'wallcheck',label:'壁量／バランス',       enabled:_opt('rep_wallcheck'),numbered:true },
+    { key:'column',   label:'柱の断面算定',         enabled:_opt('rep_column'),   numbered:true },
+    { key:'calc_log', label:'詳細計算ログ',         enabled:_opt('rep_calc_log'), numbered:true },
+    { key:'caseList', label:'保存済みケース一覧',   enabled:_opt('rep_caseList') && savedCases.length > 0, numbered:true },
+    { key:'formulas', label:'使用式一覧',           enabled:_opt('rep_formulas'), numbered:true },
+    { key:'logic',    label:'計算ロジック詳細解説', enabled:_opt('rep_logic'),    numbered:true }
+  ]);
+
   const initScript = ''
-    + 'function _initReport(){\n'
+    + 'const _tocMeta = '+tocMetaJson+';\n'
+    + 'function _reportContentChildren(page){\n'
+    + '  return Array.from(page.children).filter(function(el){ return !el.classList.contains("page-number"); });\n'
+    + '}\n'
+    + 'function _reportOverflow(page){\n'
+    + '  return page.scrollHeight > page.clientHeight + 1;\n'
+    + '}\n'
+    + 'function _reportClonePage(source, keepMeta){\n'
+    + '  const page = source.cloneNode(false);\n'
+    + '  page.innerHTML = "";\n'
+    + '  if (!keepMeta) {\n'
+    + '    page.removeAttribute("id");\n'
+    + '    page.removeAttribute("data-toc-id");\n'
+    + '    page.removeAttribute("data-toc-label");\n'
+    + '  }\n'
+    + '  return page;\n'
+    + '}\n'
+    + 'function _reportRepeaters(source){\n'
+    + '  const children = _reportContentChildren(source);\n'
+    + '  if (!children.length) return [];\n'
+    + '  const first = children[0];\n'
+    + '  if (first.tagName === "H1" || first.tagName === "H2") return [first.cloneNode(true)];\n'
+    + '  return [];\n'
+    + '}\n'
+    + 'function _reportStartPage(state, keepMeta, continuation){\n'
+    + '  const page = _reportClonePage(state.source, keepMeta);\n'
+    + '  state.mount.appendChild(page);\n'
+    + '  state.pages.push(page);\n'
+    + '  if (continuation) state.repeaters.forEach(function(node){ page.appendChild(node.cloneNode(true)); });\n'
+    + '  return page;\n'
+    + '}\n'
+    + 'function _reportUserContentCount(page, state){\n'
+    + '  return _reportContentChildren(page).length - (state.repeaters ? state.repeaters.length : 0);\n'
+    + '}\n'
+    + 'function _reportNewTableShell(source){\n'
+    + '  const table = source.cloneNode(false);\n'
+    + '  table.innerHTML = "";\n'
+    + '  Array.from(source.children).forEach(function(child){\n'
+    + '    if (child.tagName === "THEAD") table.appendChild(child.cloneNode(true));\n'
+    + '    if (child.tagName === "TBODY") table.appendChild(document.createElement("tbody"));\n'
+    + '  });\n'
+    + '  if (!table.querySelector("tbody")) table.appendChild(document.createElement("tbody"));\n'
+    + '  return table;\n'
+    + '}\n'
+    + 'function _reportAppendSimple(state, page, node){\n'
+    + '  page.appendChild(node);\n'
+    + '  if (!_reportOverflow(page)) return page;\n'
+    + '  page.removeChild(node);\n'
+    + '  if (_reportUserContentCount(page, state) > 0) {\n'
+    + '    page = _reportStartPage(state, false, true);\n'
+    + '    page.appendChild(node);\n'
+    + '  } else {\n'
+    + '    page.appendChild(node);\n'
+    + '  }\n'
+    + '  return page;\n'
+    + '}\n'
+    + 'function _reportAppendContainer(state, page, node){\n'
+    + '  const items = Array.from(node.childNodes);\n'
+    + '  let shell = node.cloneNode(false);\n'
+    + '  shell.innerHTML = "";\n'
+    + '  page.appendChild(shell);\n'
+    + '  items.forEach(function(item){\n'
+    + '    const clone = item.cloneNode(true);\n'
+    + '    shell.appendChild(clone);\n'
+    + '    if (!_reportOverflow(page)) return;\n'
+    + '    shell.removeChild(clone);\n'
+    + '    if (!shell.childNodes.length && _reportUserContentCount(page, state) === 0) {\n'
+    + '      shell.appendChild(clone);\n'
+    + '      return;\n'
+    + '    }\n'
+    + '    if (!shell.childNodes.length) page.removeChild(shell);\n'
+    + '    page = _reportStartPage(state, false, true);\n'
+    + '    shell = node.cloneNode(false);\n'
+    + '    shell.innerHTML = "";\n'
+    + '    page.appendChild(shell);\n'
+    + '    shell.appendChild(clone);\n'
+    + '  });\n'
+    + '  if (!shell.childNodes.length && shell.parentNode) shell.parentNode.removeChild(shell);\n'
+    + '  return page;\n'
+    + '}\n'
+    + 'function _reportAppendTable(state, page, node){\n'
+    + '  const sourceBody = Array.from(node.children).find(function(child){ return child.tagName === "TBODY"; });\n'
+    + '  const rows = sourceBody ? Array.from(sourceBody.children) : [];\n'
+    + '  if (!rows.length) return _reportAppendSimple(state, page, node);\n'
+    + '  let table = _reportNewTableShell(node);\n'
+    + '  let tbody = table.querySelector("tbody");\n'
+    + '  page.appendChild(table);\n'
+    + '  rows.forEach(function(row){\n'
+    + '    const clone = row.cloneNode(true);\n'
+    + '    tbody.appendChild(clone);\n'
+    + '    if (!_reportOverflow(page)) return;\n'
+    + '    tbody.removeChild(clone);\n'
+    + '    if (!tbody.children.length && _reportUserContentCount(page, state) === 0) {\n'
+    + '      tbody.appendChild(clone);\n'
+    + '      return;\n'
+    + '    }\n'
+    + '    if (!tbody.children.length) page.removeChild(table);\n'
+    + '    page = _reportStartPage(state, false, true);\n'
+    + '    table = _reportNewTableShell(node);\n'
+    + '    tbody = table.querySelector("tbody");\n'
+    + '    page.appendChild(table);\n'
+    + '    tbody.appendChild(clone);\n'
+    + '  });\n'
+    + '  return page;\n'
+    + '}\n'
+    + 'function _reportAppendNode(state, page, node){\n'
+    + '  if (node.nodeType !== 1) return _reportAppendSimple(state, page, node);\n'
+    + '  if (node.tagName === "TABLE") return _reportAppendTable(state, page, node);\n'
+    + '  if (node.classList && node.classList.contains("report-log")) return _reportAppendContainer(state, page, node);\n'
+    + '  return _reportAppendSimple(state, page, node);\n'
+    + '}\n'
+    + 'function _reportPaginate(){\n'
+    + '  const originals = Array.from(document.querySelectorAll(".report-page"));\n'
+    + '  if (!originals.length) return;\n'
+    + '  const mount = document.createElement("div");\n'
+    + '  mount.id = "report-pages";\n'
+    + '  originals[0].parentNode.insertBefore(mount, originals[0]);\n'
+    + '  originals.forEach(function(source){\n'
+    + '    const state = { source: source, mount: mount, pages: [], repeaters: _reportRepeaters(source) };\n'
+    + '    let page = _reportStartPage(state, true, false);\n'
+    + '    _reportContentChildren(source).forEach(function(node){\n'
+    + '      page = _reportAppendNode(state, page, node.cloneNode(true));\n'
+    + '    });\n'
+    + '    page.querySelectorAll(".page-number").forEach(function(el){ el.remove(); });\n'
+    + '    state.pages.forEach(function(p){\n'
+    + '      if (!p.querySelector(".page-number")) {\n'
+    + '        const pn = document.createElement("div");\n'
+    + '        pn.className = "page-number";\n'
+    + '        p.appendChild(pn);\n'
+    + '      }\n'
+    + '    });\n'
+    + '    source.remove();\n'
+    + '  });\n'
+    + '}\n'
+    + 'function _reportAssignNumbers(){\n'
     + '  const pages = Array.from(document.querySelectorAll(".report-page"));\n'
-    + '  const numbered = pages.filter(function(p){ return p.id !== "rp-cover" && p.id !== "rp-toc"; });\n'
+    + '  const numbered = pages.filter(function(p){ return p.getAttribute("data-page-number-exclude") !== "1"; });\n'
     + '  numbered.forEach(function(p, i){\n'
     + '    const pn = p.querySelector(".page-number");\n'
-    + '    if (pn) pn.textContent = "- " + (i+1) + " -";\n'
+    + '    if (pn) pn.textContent = "- " + (i + 1) + " -";\n'
+    + '  });\n'
+    + '  const sectionPageMap = new Map();\n'
+    + '  pages.forEach(function(p){\n'
+    + '    const keys = (p.getAttribute("data-toc-keys") || "").split(",").map(function(k){ return k.trim(); }).filter(Boolean);\n'
+    + '    if (!keys.length) return;\n'
+    + '    const idx = numbered.indexOf(p);\n'
+    + '    const pageNo = idx >= 0 ? (idx + 1) : null;\n'
+    + '    keys.forEach(function(key){\n'
+    + '      if (!sectionPageMap.has(key)) sectionPageMap.set(key, pageNo);\n'
+    + '    });\n'
     + '  });\n'
     + '  const tocEl = document.getElementById("toc-content");\n'
-    + '  if (tocEl) {\n'
-    + '    let html = "";\n'
-    + '    numbered.forEach(function(p, i){\n'
-    + '      const id = p.getAttribute("data-toc-id");\n'
-    + '      const lbl = p.getAttribute("data-toc-label");\n'
-    + '      if (!id || !lbl) return;\n'
-    + '      const cls = id.indexOf("logic-")===0 ? "" : (id.indexOf("case-")===0 && id.indexOf("-")===id.lastIndexOf("-") ? " toc-section" : "");\n'
-    + '      html += "<div class=\\"toc-item" + cls + "\\"><span class=\\"toc-label\\">" + lbl + "</span>"\n'
-    + '            + "<span class=\\"toc-page\\">" + (i+1) + " ページ</span></div>";\n'
-    + '    });\n'
-    + '    tocEl.innerHTML = html || "(目次対象ページがありません)";\n'
-    + '  }\n'
+    + '  if (!tocEl) return;\n'
+    + '  let html = "";\n'
+    + '  _tocMeta.forEach(function(meta){\n'
+    + '    if (!meta || !meta.enabled) return;\n'
+    + '    const p = sectionPageMap.has(meta.key) ? sectionPageMap.get(meta.key) : null;\n'
+    + '    const disp = (meta.numbered && p != null) ? (p + " ページ") : "-";\n'
+    + '    html += "<div class=\\"toc-item\\"><span class=\\"toc-label\\">" + meta.label + "</span>"\n'
+    + '          + "<span class=\\"toc-page\\">" + disp + "</span></div>";\n'
+    + '  });\n'
+    + '  tocEl.innerHTML = html || "(目次対象ページがありません)";\n'
+    + '}\n'
+    + 'function _initReport(){\n'
+    + '  document.body.classList.remove("report-ready");\n'
+    + '  document.body.classList.add("report-building");\n'
+    + '  _reportPaginate();\n'
+    + '  _reportAssignNumbers();\n'
+    + '  document.body.classList.remove("report-building");\n'
+    + '  document.body.classList.add("report-ready");\n'
     + '}\n'
     + 'if (document.readyState === "complete" || document.readyState === "interactive") _initReport();\n'
-    + 'else window.addEventListener("DOMContentLoaded", _initReport);\n';
+    + 'else window.addEventListener("DOMContentLoaded", _initReport);\n'
+    + 'window.addEventListener("beforeprint", _reportAssignNumbers);\n';
 
   const toolbar = '<div class="toolbar no-print">'
     + '<button onclick="window.print()">印刷／PDF 保存</button>'
